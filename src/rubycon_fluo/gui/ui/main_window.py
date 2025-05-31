@@ -1295,7 +1295,7 @@ class Ui_MainWindow(object):
     # setupUi
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Me so Raman", None))
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"RubyCon Fluo", None))
         self.label_device.setText(QCoreApplication.translate("MainWindow", u"Device:", None))
         self.pushButton_refresh_device.setText(QCoreApplication.translate("MainWindow", u"Refresh \u27f3", None))
         self.pushButton_defaults_device.setText(QCoreApplication.translate("MainWindow", u"Apply settings as default for this device", None))

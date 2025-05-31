@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QPalette, QColor
 from PySide6.QtCore import Qt
 
-from insta_raman.gui.controllers.main_window_controller import MainWindowController
+from rubycon_fluo.gui.controllers.main_window_controller import MainWindowController
 
 def _dark_palette() -> QPalette:
     p = QPalette()

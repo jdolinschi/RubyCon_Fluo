@@ -6,8 +6,8 @@ import numpy as np
 from PySide6.QtCore import QObject, Signal, Slot, QThread
 from PySide6.QtWidgets import QDialog
 
-from insta_raman.gui.controllers.acquisition import AcquisitionWorker
-from insta_raman.gui.dialogs.optimize_integration import OptimizeDialog
+from rubycon_fluo.gui.controllers.acquisition import AcquisitionWorker
+from rubycon_fluo.gui.dialogs.optimize_integration import OptimizeDialog
 
 
 class AcquisitionController(QObject):

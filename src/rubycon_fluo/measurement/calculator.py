@@ -3,7 +3,7 @@ from typing import Optional, Tuple
 #from insta_raman.calibration.ruby_pressure import RubyPressureScale
 #from insta_raman.calibration.ruby_temperature import RubyTemperatureScale
 import logging
-from insta_raman.calibration.calibration_core import (
+from rubycon_fluo.calibration.calibration_core import (
     PressureCalibration,
     TemperatureCalibration,
 )

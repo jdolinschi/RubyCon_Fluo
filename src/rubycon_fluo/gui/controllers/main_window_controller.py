@@ -19,25 +19,25 @@ from PySide6.QtWidgets import QMainWindow, QApplication, QDialog, QVBoxLayout, Q
     QPushButton, QAbstractItemView, QFileDialog, QTextBrowser
 from seabreeze.cseabreeze import SeaBreezeError
 
-from insta_raman.gui.ui.main_window import Ui_MainWindow
-from insta_raman.gui.views.spectrum_view_box import SpectrumViewBox
-from insta_raman.settings.settings_manager import SettingsManager
-from insta_raman.device.spectrometer import SpectrometerController
+from rubycon_fluo.gui.ui.main_window import Ui_MainWindow
+from rubycon_fluo.gui.views.spectrum_view_box import SpectrumViewBox
+from rubycon_fluo.settings.settings_manager import SettingsManager
+from rubycon_fluo.device.spectrometer import SpectrometerController
 
 from PySide6.QtWidgets import QMessageBox
 
-from insta_raman.gui.dialogs.help_window import AboutWindow
-from insta_raman.gui.dialogs.about_dialog import AboutDialog
-from insta_raman.fitting.voigt_fitter import VoigtFitter
-from insta_raman.measurement.record import MeasurementRecord
-from insta_raman.fitting.auto_fit import AutoFit
-from insta_raman.fitting.auto_fit_worker import AutoFitWorker
-from insta_raman.measurement.calculator import MeasurementCalculator
-from insta_raman.measurement.manager import MeasurementManager
-from insta_raman.gui.controllers.acquisition_controller import AcquisitionController
-from insta_raman.fitting.auto_fit import residual_nb, jac_nb
-from insta_raman.fitting.voigt_fitter import _residual_nb as res1, _jac_nb as jac1
-from insta_raman.calibration.calibration_core import (
+from rubycon_fluo.gui.dialogs.help_window import AboutWindow
+from rubycon_fluo.gui.dialogs.about_dialog import AboutDialog
+from rubycon_fluo.fitting.voigt_fitter import VoigtFitter
+from rubycon_fluo.measurement.record import MeasurementRecord
+from rubycon_fluo.fitting.auto_fit import AutoFit
+from rubycon_fluo.fitting.auto_fit_worker import AutoFitWorker
+from rubycon_fluo.measurement.calculator import MeasurementCalculator
+from rubycon_fluo.measurement.manager import MeasurementManager
+from rubycon_fluo.gui.controllers.acquisition_controller import AcquisitionController
+from rubycon_fluo.fitting.auto_fit import residual_nb, jac_nb
+from rubycon_fluo.fitting.voigt_fitter import _residual_nb as res1, _jac_nb as jac1
+from rubycon_fluo.calibration.calibration_core import (
     PRESSURE_CALIBRATIONS,          # Dict[str, PressureCalibration]
     TEMPERATURE_CALIBRATIONS,       # Dict[str, TemperatureCalibration]
     PressureCalibration,

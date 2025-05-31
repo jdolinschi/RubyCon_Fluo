@@ -48,15 +48,15 @@ class TemperatureCalibration(ABC):
 
 from rubycon_fluo.calibration.rekhi1999_combo import Rekhi1999
 
-from insta_raman.calibration.shen2020_press import Shen2020
-from insta_raman.calibration.dewaele2008_press import Dewaele2008
-from insta_raman.calibration.mao1986_press import Mao1986
-from insta_raman.calibration.dorogokupets2007_press import Dorogokupets2007
-from insta_raman.calibration.chijioke2005_press import Chijioke2005
+from rubycon_fluo.calibration.shen2020_press import Shen2020
+from rubycon_fluo.calibration.dewaele2008_press import Dewaele2008
+from rubycon_fluo.calibration.mao1986_press import Mao1986
+from rubycon_fluo.calibration.dorogokupets2007_press import Dorogokupets2007
+from rubycon_fluo.calibration.chijioke2005_press import Chijioke2005
 
-from insta_raman.calibration.yamaoka1980_temp import Yamaoka1980
-from insta_raman.calibration.vos1991_temp import Vos1991
-from insta_raman.calibration.ragan1992_temp import Ragan1992
+from rubycon_fluo.calibration.yamaoka1980_temp import Yamaoka1980
+from rubycon_fluo.calibration.vos1991_temp import Vos1991
+from rubycon_fluo.calibration.ragan1992_temp import Ragan1992
 
 
 # ---------- 3.  Build the registries ----------

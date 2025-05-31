@@ -1,6 +1,3 @@
-"""
-Modal dialog to scan integration times and pick the one reaching 95% of saturation.
-"""
 import numpy as np
 from PySide6.QtWidgets import (
     QDialog, QTextEdit, QVBoxLayout, QPushButton,

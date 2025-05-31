@@ -16,7 +16,7 @@ difference between **T_meas** and **T_ref** in nm.
 from __future__ import annotations
 from typing import Tuple
 
-from insta_raman.calibration.calibration_core import TemperatureCalibration
+from rubycon_fluo.calibration.calibration_core import TemperatureCalibration
 
 
 class Ragan1992(TemperatureCalibration):

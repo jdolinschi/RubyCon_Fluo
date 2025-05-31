@@ -5,7 +5,7 @@ import warnings
 from tqdm import tqdm
 import time
 
-from insta_raman.fitting.auto_fit import AutoFit
+from rubycon_fluo.fitting.auto_fit import AutoFit
 # (If your AutoFit lives elsewhere, update the import accordingly.)
 
 class SyntheticSpectrumTester:

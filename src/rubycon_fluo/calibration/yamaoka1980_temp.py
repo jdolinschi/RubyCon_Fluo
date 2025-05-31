@@ -1,4 +1,4 @@
-from insta_raman.calibration.calibration_core import TemperatureCalibration
+from rubycon_fluo.calibration.calibration_core import TemperatureCalibration
 
 class Yamaoka1980(TemperatureCalibration):
     """

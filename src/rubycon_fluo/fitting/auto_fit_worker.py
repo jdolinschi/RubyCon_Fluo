@@ -1,6 +1,6 @@
 from PySide6.QtCore import QObject, Signal, Slot
 import numpy as np
-from insta_raman.fitting.auto_fit import AutoFit
+from rubycon_fluo.fitting.auto_fit import AutoFit
 
 class AutoFitWorker(QObject):
     """Runs a two-peak AutoFit in a background thread."""

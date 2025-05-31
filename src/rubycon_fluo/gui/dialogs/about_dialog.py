@@ -1,5 +1,4 @@
 from __future__ import annotations
-from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton
@@ -17,12 +16,13 @@ class AboutDialog(QDialog):
 
         layout = QVBoxLayout(self)
 
-        # --- YOUR CONTENT HERE ------------------------------------------
         layout.addWidget(QLabel(
-            "<h3>Insta-Raman</h3>"
+            "<h3>RubyCon Fluo</h3>"
             "<p>Version 1.0.0<br>"
-            "Created by <b>Your Name</b></p>"
-            "<p>© 2024 Your Lab – All rights reserved.</p>",
+            "Created by <b>Jonathan Dolinschi</b></p>"
+            "<p>© 2025 <a href=\"https://github.com/jdolinschi/RubyCon-Fluo\">GitHub Repository</a></p>"
+            "<p>Licensed under the <a href=\"https://opensource.org/licenses/MIT\">MIT License</a>. "
+            "See the <a href=\"https://github.com/jdolinschi/RubyCon-Fluo/blob/main/LICENSE\">LICENSE</a> file for full text.</p>",
             wordWrap=True
         ))
 

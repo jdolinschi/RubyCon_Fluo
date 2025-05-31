@@ -18,7 +18,7 @@ from __future__ import annotations
 import math
 from typing import Tuple
 
-from insta_raman.calibration.calibration_core import PressureCalibration
+from rubycon_fluo.calibration.calibration_core import PressureCalibration
 
 
 class Mao1986(PressureCalibration):

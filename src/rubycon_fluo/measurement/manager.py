@@ -6,7 +6,7 @@ from PySide6.QtCore import QObject, Signal, Slot
 from PySide6.QtGui  import QStandardItemModel, QStandardItem
 from PySide6.QtWidgets import QFileDialog, QMessageBox, QWidget
 
-from insta_raman.measurement.record import MeasurementRecord
+from rubycon_fluo.measurement.record import MeasurementRecord
 
 
 class MeasurementManager(QObject):
