@@ -14,7 +14,6 @@ difference between **T_meas** and **T_ref** in nm.
 """
 
 from __future__ import annotations
-from typing import Tuple
 
 from rubycon_fluo.calibration.calibration_core import TemperatureCalibration
 

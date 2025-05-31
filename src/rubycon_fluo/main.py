@@ -1,4 +1,3 @@
-"""Entry point – keep it minimal on purpose."""
 from __future__ import annotations
 
 import sys

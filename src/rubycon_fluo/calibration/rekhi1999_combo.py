@@ -1,7 +1,6 @@
-# insta_raman/calibration/rekhi1999_combo.py
 from rubycon_fluo.calibration.calibration_core import PressureCalibration
 from typing import Tuple
-import math
+
 
 
 class Rekhi1999(PressureCalibration):

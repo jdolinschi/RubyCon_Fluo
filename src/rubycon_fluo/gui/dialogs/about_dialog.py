@@ -6,7 +6,11 @@ from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton
 
 class AboutDialog(QDialog):
     """
-    A lightweight, fixed-size window that shows author / version info.
+    Initialize the AboutDialog.
+
+    Create a fixed-size dialog window displaying the application name, version,
+    and author information. Sets the window title to “About” and arranges
+    a simple label plus a Close button.
     """
 
     def __init__(self, parent=None) -> None:

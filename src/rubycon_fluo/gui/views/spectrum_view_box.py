@@ -10,7 +10,7 @@ from pyqtgraph import ViewBox
 
 
 class SpectrumViewBox(ViewBox):
-    """ViewBox with rich zoom interactions suitable for Raman spectra."""
+    """ViewBox with rich zoom interactions suitable for spectra."""
 
     interactionStarted = Signal()
     interactionFinished = Signal()

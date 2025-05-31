@@ -12,7 +12,6 @@ where ΔT = T − 300 K.  Returned here as **nm**.
 """
 
 from __future__ import annotations
-from typing import Tuple
 
 from rubycon_fluo.calibration.calibration_core import TemperatureCalibration
 

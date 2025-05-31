@@ -49,6 +49,14 @@ _INVALID_CHARS_RE = re.compile(r'[<>:"/\\|?*\0]')   # Windows & POSIX
 
 class MainWindowController(QMainWindow):
     def __init__(self) -> None:
+        """
+            Initialize the main window controller.
+
+            Build the UI scaffolding, load static assets (colors, settings),
+            configure widgets, initialize state variables, set up measurement
+            models, build plots, create timers, initialize calibration scales,
+            install event filters, wire all signals, and refresh connected devices.
+        """
         super().__init__()
 
         # 1. Build static UI scaffolding
@@ -67,7 +75,7 @@ class MainWindowController(QMainWindow):
         self._create_models()
         self._setup_measurement_manager()
 
-        # 6. Visual widgets (Raman plot, overlays, temp plot)
+        # 6. Visual widgets (Spectra plot, overlays, temp plot)
         self._build_plot_items()
         self._build_temperature_plot()
 
@@ -92,12 +100,23 @@ class MainWindowController(QMainWindow):
         self._refresh_devices(first_time=True)
 
     def _build_ui(self) -> None:
-        """Instantiate the Designer‑generated UI and attach to *self*."""
+        """
+            Instantiate and attach the Designer-generated UI to this main window.
+
+            Create a `Ui_MainWindow` instance, call its `setupUi(self)`, and
+            store the resulting `self.ui` object for later access.
+        """
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
     def _load_static_assets(self) -> None:
-        """Colours JSON + persistent settings helpers."""
+        """
+            Load color definitions and persistent settings manager.
+
+            Read a JSON file named `colors.json` (located under the project’s
+            settings folder) into `self.colors`. Instantiate a `SettingsManager`
+            and a Qt `QSettings` object for storing user preferences.
+        """
         settings_dir = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "..", "..", "settings")
         )
@@ -108,11 +127,19 @@ class MainWindowController(QMainWindow):
 
         # persist + last‐device
         self._sm = SettingsManager()
-        self._qt = QSettings("MyCompany", "RamanNoodles")
+        self._qt = QSettings("JonathanDolinschi", "RubyCon_Fluo")
 
     def _configure_ui(self) -> None:
-        """Numeric validators, disabled/enabled states, trivial styles."""
-        # allow only numeric (int or float) input in these three fields:
+        """
+            Configure validators, default widget states, and help menu actions.
+
+            Install numeric validators on wavelength/temperature input fields,
+            set default checked/unchecked states for correction groups, apply
+            initial stylesheets, set up TEC spinbox ranges, disable certain
+            buttons until data is available, and add “User Guide” and “About”
+            actions to the Help menu.
+        """
+            # allow only numeric (int or float) input in these three fields:
         num_validator = QDoubleValidator(-1e12, 1e12, 6, self)
         num_validator.setNotation(QDoubleValidator.Notation.StandardNotation)
 
@@ -181,6 +208,13 @@ class MainWindowController(QMainWindow):
         help_menu.addAction(self._act_about)
 
     def _show_user_guide_window(self) -> None:
+        """
+            Display the user guide window.
+
+            If the help dialog has not already been created, instantiate
+            `AboutWindow(self)`. Then show, raise, and activate it so that
+            it appears on top.
+        """
         if not hasattr(self, "_user_guide_win"):
             self._user_guide_win = AboutWindow(self)
         self._user_guide_win.show()
@@ -189,9 +223,23 @@ class MainWindowController(QMainWindow):
 
     # ---- Help → About ----------------------------------------------
     def _show_about_dialog(self) -> None:
+        """
+            Open the About dialog.
+
+            Create and execute an `AboutDialog(self)` as a modal dialog so
+            that the user sees author/version/license information.
+        """
         AboutDialog(self).exec()
 
     def _create_state(self) -> None:
+        """
+            Initialize internal state variables, flags, and background threads.
+
+            Set up flags for fitting state, create placeholder attributes for
+            background acquisition, spectrum caching, calibration coefficients,
+            and T-calibration. Also start a daemon thread to “warm up” Numba‐
+           compiled functions so they compile ahead of time.
+        """
         # about‑to‑quit → make sure TEC is disabled
         q_app = cast(QApplication, QApplication.instance())
         q_app.aboutToQuit.connect(self._disable_tec_on_exit)
@@ -271,7 +319,13 @@ class MainWindowController(QMainWindow):
         threading.Thread(target=_warm_up, daemon=True).start()
 
     def _create_models(self) -> None:
-        """QStandardItemModel shown in the Saved‑measurements table."""
+        """
+            Create and configure the Qt table model for saved measurements.
+
+            Instantiate a `QStandardItemModel` with 6 columns and set appropriate
+            horizontal header labels. Attach the model to `self.ui.tableView_saved_measurements`
+            and prevent editing via `NoEditTriggers`.
+        """
         self._saved_model = QStandardItemModel(0, 6, self)
         self._saved_model.setHorizontalHeaderLabels([
             "Name",
@@ -287,7 +341,16 @@ class MainWindowController(QMainWindow):
         )
 
     def _setup_measurement_manager(self) -> None:
-        """Attach MeasurementManager + hook up Add / Remove / Save buttons."""
+        """
+            Instantiate the MeasurementManager and hook up its add/remove/save buttons.
+
+            Create `MeasurementManager(self._saved_model, parent=self)`. Connect the
+            “Add,” “Remove Selected,” “Remove All,” “Save Selected,” and “Save All”
+            buttons to the corresponding methods on `MeasurementManager`. Add a new
+            “auto-save” toggle that prompts the user for a folder when turned on,
+            and hooks into `self._measurement_manager.enable_auto_save(folder)`.
+            Also wire selection-changed signals to enable/disable the Remove/Save buttons.
+        """
         self._measurement_manager = MeasurementManager(self._saved_model, parent=self)
 
         # Add
@@ -326,7 +389,22 @@ class MainWindowController(QMainWindow):
         self._measurement_manager.recordsChanged.connect(self._update_save_buttons)
 
     def _build_plot_items(self) -> None:
-        """Central Raman plot + every overlay / InfiniteLine."""
+        """
+            Build the central spectra plot item and all overlay curves.
+
+            Create a `PlotItem` with a custom `SpectrumViewBox`, add it to
+            `self.ui.widget`, and then instantiate and configure the following
+            PyQtGraph curve and InfiniteLine objects:
+
+            - `_curve`: main corrected spectrum (white line)
+            - `_curve_inside` / `_curve_outside`: masked color segments for auto-fit
+            - `_auto_model_curve`: dashed line for two-peak fit overlay
+            - `_auto_voigt_line` / `_r2_voigt_line`: vertical lines for R1 and R2 peaks
+            - `_manual_line` / `_manual_voigt_curve` / `_manual_voigt_line`: manual-fit overlays
+
+            Finally, store the original `wheelEvent` for later restoration and
+            disable auto-range on the Y axis.
+        """
         self._plot_item = pg.PlotItem(viewBox=SpectrumViewBox(self.ui.widget))
         self.ui.widget.setCentralItem(self._plot_item)
 
@@ -392,7 +470,13 @@ class MainWindowController(QMainWindow):
         self.vb.disableAutoRange(pg.ViewBox.YAxis)  # ← add this line
 
     def _build_temperature_plot(self) -> None:
-        """Static setup for the embedded temperature plot widget."""
+        """
+            Set up the embedded temperature plot widget for cooling-system data.
+
+            Retrieve `PlotItem` from `self.ui.widget_temperatureplot`, disable mouse
+            and menu interactions on its `ViewBox`, and create an empty internal deque
+            `self._temp_data` to hold (timestamp, temperature) pairs.
+        """
         temp_plot = self.ui.widget_temperatureplot.getPlotItem()
         temp_vb = temp_plot.getViewBox()
         temp_vb.setMouseEnabled(False, False)
@@ -402,14 +486,21 @@ class MainWindowController(QMainWindow):
         self._temp_data = deque()
 
     def _create_timers(self) -> None:
-        """All QTimer instances (resume‑paint, temperature poll, etc.)."""
-        # resume‑painting guard (200 ms)
+        """
+            Create all QTimer instances used for throttling, temperature sampling, and TEC polling.
+
+            - `_resume_timer`: fires every 200 ms to check whether to resume live plotting.
+            - `_temp_timer`: fires every 1 s to sample temperature and update the temperature plot.
+            - `_tec_timer`: fires every 1 s (started/stopped dynamically) to poll TEC temperature.
+            - `_manual_voigt_timer`: fires every 100 ms for live pseudo-Voigt updates.
+        """
+        # resume‑painting guard (200 ms)
         self._resume_timer = QTimer(self)
         self._resume_timer.setInterval(200)
         self._resume_timer.timeout.connect(self._check_resume)
         self._resume_timer.start()
 
-        # temperature sampling (1 s)
+        # temperature sampling (1 s)
         self._temp_timer = QTimer(self)
         self._temp_timer.setInterval(1000)
         self._temp_timer.timeout.connect(self._sample_temperature)
@@ -418,12 +509,20 @@ class MainWindowController(QMainWindow):
         self._tec_timer = QTimer(self, interval=1000)
         self._tec_timer.timeout.connect(self._update_tec_temperature)
 
-        # live pseudo‑Voigt fit timer (100 ms)
+        # live pseudo‑Voigt fit timer (100 ms)
         self._manual_voigt_timer = QTimer(self)
         self._manual_voigt_timer.setInterval(100)
         self._manual_voigt_timer.timeout.connect(self._update_manual_voigt_fit)
 
     def _init_pressure_scales(self) -> None:
+        """
+            Populate the pressure calibration combobox and set a default.
+
+            Add keys from `PRESSURE_CALIBRATIONS` to `self.ui.comboBox_pressurecalibrations`
+            and set the default selection to “Shen et al. 2020.” Connect the currentTextChanged
+            signal to `_on_pressure_scale_changed` so that selecting a new pressure scale
+            updates the calculator.
+        """
         self.ui.comboBox_pressurecalibrations.addItems(PRESSURE_CALIBRATIONS.keys())
         default = "Shen et al. 2020"
         self.ui.comboBox_pressurecalibrations.setCurrentText(default)
@@ -433,6 +532,13 @@ class MainWindowController(QMainWindow):
         )
 
     def _init_temperature_scales(self) -> None:
+        """
+            Populate the temperature calibration combobox and set a default.
+
+            Add keys from `TEMPERATURE_CALIBRATIONS` to `self.ui.comboBox_temperaturecalibrations`
+            and set the default selection to “Yamaoka et al. 1980.” Connect its
+            currentTextChanged signal to `_on_temperature_scale_changed` to update the calculator.
+        """
         self.ui.comboBox_temperaturecalibrations.addItems(TEMPERATURE_CALIBRATIONS.keys())
         default = "Yamaoka et al. 1980"
         self.ui.comboBox_temperaturecalibrations.setCurrentText(default)
@@ -441,8 +547,17 @@ class MainWindowController(QMainWindow):
         )
 
     def _init_calculator(self) -> None:
+        """
+            Initialize the MeasurementCalculator with reference values.
+
+            Instantiate `self._calculator = MeasurementCalculator()`. Call
+            `_update_calculator_scales()` so both pressure and temperature scales
+            are set. Then read initial reference wavelength and temperature from
+            `lineEdit_reference_wavelength_nm` and `lineEdit_reference_temperature_c`,
+            and feed these to the calculator.
+        """
         self._calculator = MeasurementCalculator()
-        self._update_calculator_scales()  # <─ NEW single source of truth
+        self._update_calculator_scales()  # single source of truth
         self._calculator.set_reference_wavelength(
             float(self.ui.lineEdit_reference_wavelength_nm.text() or 0.0)
         )
@@ -452,8 +567,17 @@ class MainWindowController(QMainWindow):
         self.ui.lineEdit_measured_wavelength_nm.setReadOnly(True)
 
     def _wire_signals(self) -> None:
-        """Connect every remaining Qt signal that wasn’t wired inside helpers."""
-        # group the handful that originally lived inline in __init__
+        """
+            Connect all remaining Qt signals that weren’t already wired in helper methods.
+
+            - ReturnPressed on reference/temperature line edits → `_on_reference_wavelength_changed` / `_on_reference_temperature_changed`
+            - “From View” button → `_on_fromview_clicked`
+            - Manual-fit toggle buttons → `_on_manual_fit_toggled` / `_on_manual_voigt_toggled`
+            - Mouse click on the plot → `_on_mouse_clicked`
+            - Pressure/temperature calibration source buttons → `_show_pressure_source` / `_show_temperature_source`
+
+            Then call `_connect_signals()` to wire device, acquisition, and correction signals.
+        """
         self.ui.lineEdit_reference_wavelength_nm.returnPressed.connect(
             self._on_reference_wavelength_changed
         )
@@ -479,7 +603,19 @@ class MainWindowController(QMainWindow):
         self._connect_signals()
 
     def _setup_acquisition_connections(self) -> None:
-        """Wire AcquisitionManager to our buttons & progress widgets."""
+        """
+            Hook AcquisitionController signals to UI controls.
+
+            For the current `AcquisitionController` (self._acq_mgr):
+            - Connect changes in integration time, scan average, and correction checkboxes
+              to `m.set_parameters(...)`.
+            - Connect Single/Continuous toggles to `_on_single_toggled` / `_on_continuous_toggled`.
+            - Connect Background toggle to `_on_background_toggled`.
+            - Connect progress signals (`integration_tick`, `scan_tick`, `remaining_time`)
+              to update `progressBar`, `progressBar_scans_progress`, and `label_time_left_seconds`.
+            - Connect `spectrum_ready` to `_on_spectrum_ready`, `finished` to `_on_acquisition_finished`,
+              and `background_finished` to `_on_background_finished`.
+        """
         mgr = self._acq_mgr  # type: AcquisitionController
 
         # Keep the manager’s parameters in sync with the UI
@@ -526,7 +662,14 @@ class MainWindowController(QMainWindow):
 
     @staticmethod
     def _sanitize_name(name: str) -> str:
-        """Return *name* with any illegal path characters replaced by “_”."""
+        """
+            Replace illegal filesystem characters in `name` with underscores.
+
+            Remove or replace characters not allowed on Windows/POSIX
+            (`<>:"/\\|?*\0`), strip leading/trailing whitespace or dots,
+            replace spaces with underscores, and return the cleaned name.
+            If the result is empty, return "measurement" as a default.
+        """
         cleaned = _INVALID_CHARS_RE.sub("_", name)
         cleaned = cleaned.strip().strip(".")  # no leading/trailing space/dot on Win
         cleaned = cleaned.replace(" ", "_")
@@ -537,8 +680,11 @@ class MainWindowController(QMainWindow):
                      occupied: set[str],
                      folder: Path | None) -> str:
         """
-        Return a name that is unique with respect to *occupied* and to any existing
-        file (same basename + .txt) in *folder*.
+            Generate a unique filename based on `base`.
+
+            If `base` is already in `occupied` or corresponds to an existing
+            file (`{folder}/{base}.txt`), append “_<n>” (incrementing n) until
+            a unique name is found. Return that unique name.
         """
         candidate = base
         idx = 1
@@ -553,9 +699,12 @@ class MainWindowController(QMainWindow):
     @Slot(bool)
     def _on_auto_save_toggled(self, checked: bool) -> None:
         """
-        When the user checks the Auto-save box, ask for a destination folder
-        and enable MeasurementManager’s auto-save feature.  When they un-check,
-        simply disable auto-save.
+            Handle toggling of the “Auto-save measurements” checkbox.
+
+            If checked, prompt the user to choose a directory. If the user cancels,
+            revert the checkbox to False. Otherwise, call
+            `self._measurement_manager.enable_auto_save(folder)`. If unchecked,
+            call `self._measurement_manager.disable_auto_save()`.
         """
         if checked:
             folder = QFileDialog.getExistingDirectory(
@@ -574,13 +723,16 @@ class MainWindowController(QMainWindow):
     @Slot()
     def _on_acquisition_finished(self) -> None:
         """
-        Common clean-up after ANY acquisition (single, continuous, background):
-        • Re-enable both acquisition buttons and make sure they are *unchecked*.
-        • Progress bars snap back to 100 %.
-        • Optimise button re-enabled.
-        • Fit/intensity housekeeping (unchanged).
+            Common cleanup after any acquisition (single, continuous, or background).
+
+            - Uncheck and re-enable Single/Continuous buttons.
+            - Reset both progress bars to 100%.
+            - Re-enable the Optimize button.
+            - Re-apply any auto-scale to the plot.
+            - Flush any pending spectrum if painting was paused.
+            - If Auto-fit is still on, trigger a final auto-fit on the flushed data.
         """
-        # ----------- buttons -------------------------------------------
+        # Buttons handling
         for btn in (self.ui.pushButton_single, self.ui.pushButton_continuous):
             if btn.isChecked():
                 btn.blockSignals(True)
@@ -612,9 +764,12 @@ class MainWindowController(QMainWindow):
     @Slot(bool)
     def _on_background_toggled(self, checked: bool) -> None:
         """
-        ✔  checked   → start a *new* background acquisition
-        ✖  unchecked → immediately stop using the stored background
-                       (no acquisition, no progress‑bar updates)
+            Start or stop a background acquisition based on the Background toggle.
+
+            If checked: change button text to “Collecting…”, disable the button,
+            and call `self._acq_mgr.collect_background()`.
+            If unchecked: drop the cached background in `AcquisitionManager`,
+            reset button text to “Background”, and leave progress bars at 100%.
         """
         if not self._acq_mgr:
             return
@@ -637,8 +792,11 @@ class MainWindowController(QMainWindow):
     @Slot()
     def _on_background_finished(self) -> None:
         """
-        Called after background acquisition finishes.
-        Re-enable the other controls and update the button text.
+            React to the completion of a background acquisition.
+
+            - Re-enable Continuous, Single, and Optimize buttons.
+            - Set the Background button text to “Background ✓” to indicate success,
+              then re-enable it.
         """
         # Re-enable acquisition controls
         self.ui.pushButton_continuous.setEnabled(True)
@@ -652,11 +810,11 @@ class MainWindowController(QMainWindow):
     @Slot(bool)
     def _on_single_toggled(self, checked: bool) -> None:
         """
-        • When checked → start a **single-shot** acquisition and immediately
-          disable the Continuous button so the user cannot click it.
-        • When unchecked before the exposure finishes → stop after **this**
-          exposure/scan (if averaging ≥ 1) but keep Continuous disabled until
-          the worker emits *finished*.
+            Handle the Single-shot toggle button.
+
+            If checked: disable the Continuous button and call `self._acq_mgr.start_single(False)`.
+            If unchecked (user cancels): call `self._acq_mgr.stop()` to finish the current scan
+            and keep Continuous disabled until `finished` fires.
         """
         if not self._acq_mgr:
             return
@@ -670,7 +828,11 @@ class MainWindowController(QMainWindow):
     @Slot(bool)
     def _on_continuous_toggled(self, checked: bool) -> None:
         """
-        Mirror of _on_single_toggled for **continuous** mode.
+            Handle the Continuous-shot toggle button.
+
+            If checked: disable the Single button and call `self._acq_mgr.start_single(True)`.
+            If unchecked: call `self._acq_mgr.stop()` to stop continuous acquisition after
+            the current scan completes.
         """
         if not self._acq_mgr:
             return
@@ -684,8 +846,11 @@ class MainWindowController(QMainWindow):
     @Slot(str)
     def _on_pressure_scale_changed(self, _name: str) -> None:
         """
-        Re-sync calculator + grey-out temperature picker if necessary,
-        then refresh any locked fit.
+            Update the calculator when the pressure calibration selection changes.
+
+            Fetch the selected pressure‐calibration object from `PRESSURE_CALIBRATIONS[_name]`,
+            store it in `self._pressure_cal`, call `self._calculator.set_pressure_scale(p_cal)`,
+            and invoke `_refresh_locked_fit()` to re-compute any currently locked fit.
         """
         self._update_calculator_scales()
         self._refresh_locked_fit()  # recompute displayed pressure
@@ -693,14 +858,24 @@ class MainWindowController(QMainWindow):
     @Slot(str)
     def _on_temperature_scale_changed(self, _name: str) -> None:
         """
-        Only relevant when the currently selected pressure scale is *not*
-        a combined one.  Otherwise the temp combo is disabled.
+            Update the calculator when the temperature calibration selection changes.
+
+            Fetch the selected temperature‐calibration object from `TEMPERATURE_CALIBRATIONS[_name]`,
+            store it in `self._temperature_cal`, call `self._calculator.set_temperature_scale(t_cal)`,
+            and invoke `_refresh_locked_fit()` to re-compute any currently locked fit.
         """
         self._update_calculator_scales()
         self._refresh_locked_fit()
 
     @Slot()
     def _on_reference_wavelength_changed(self):
+        """
+            Handle Enter-pressed on the reference wavelength input.
+
+            Parse the new reference wavelength from `lineEdit_reference_wavelength_nm`,
+            update `self._calculator.set_reference_wavelength(lambda_0)`, and call
+            `_refresh_locked_fit()` so that any existing locked fit is re-calculated.
+        """
         try:
             lambda_0 = float(self.ui.lineEdit_reference_wavelength_nm.text())
         except ValueError:
@@ -710,6 +885,13 @@ class MainWindowController(QMainWindow):
 
     @Slot()
     def _on_reference_temperature_changed(self):
+        """
+            Handle Enter-pressed on the reference temperature input.
+
+            Parse the new reference temperature from `lineEdit_reference_temperature_c`.
+            If parsing succeeds, update `self._calculator.set_reference_temperature(T0)`
+            and call `_refresh_locked_fit()` to re-compute any currently locked fit.
+        """
         try:
             T0 = float(self.ui.lineEdit_reference_temperature_c.text())
         except ValueError:
@@ -719,6 +901,14 @@ class MainWindowController(QMainWindow):
 
     @Slot()
     def _on_fromview_clicked(self) -> None:
+        """
+            Copy the current X-range from the plot to the min/max fitting range spinboxes.
+
+            Read `viewRange()[0]` from the central `ViewBox`, set
+            `doubleSpinBox_min_fitting_range_nm` and `doubleSpinBox_max_fitting_range_nm`
+            accordingly, and if Auto-fit is on and data exists, trigger `_attempt_autofit()`
+            followed by `_update_autofit_highlight()`.
+        """
         x0, x1 = self._plot_item.vb.viewRange()[0]
         self.ui.doubleSpinBox_min_fitting_range_nm.setValue(x0)
         self.ui.doubleSpinBox_max_fitting_range_nm.setValue(x1)
@@ -734,10 +924,12 @@ class MainWindowController(QMainWindow):
     @Slot()
     def _on_temperature_input_changed(self) -> None:
         """
-        Called when the user presses Enter in either
-        the measured‐ or reference‐temperature field.
-        If a fit is locked, update the measured temperature
-        in the calculator and refresh that locked fit.
+            Handle Enter-pressed on the measured-temperature input.
+
+            If a fit is currently locked (`self._manual_voigt_locked` or `self._manual_locked`),
+            parse the new measured temperature from `lineEdit_measured_temperature_c`,
+            feed it to `self._calculator.set_measured_temperature(Tm)`, and call
+            `_refresh_locked_fit()` to update the displayed pressure.
         """
         # only proceed if a fit is locked
         if not (self._manual_voigt_locked or self._manual_locked):
@@ -754,6 +946,13 @@ class MainWindowController(QMainWindow):
         self._refresh_locked_fit()
 
     def _show_temperature_source(self) -> None:
+        """
+            Display a dialog showing the full citation text for the selected temperature scale.
+
+            Create a modal `QDialog`, set its title to “<Calibration Name> — Full source”,
+            place a read-only `QTextEdit` containing `cal.source`, and add Copy/Close buttons
+            to let the user copy the citation text or dismiss the dialog.
+        """
         if self._temperature_cal is None:
             return
         cal = self._temperature_cal
@@ -783,24 +982,13 @@ class MainWindowController(QMainWindow):
         dlg.exec()
 
     @Slot()
-    def _on_reference_wavelength_changed(self) -> None:
-        """
-        Called when the user presses Enter in the reference‐wavelength field.
-        Update the calculator's reference wavelength and refresh any locked fit.
-        """
-        # parse the new reference wavelength
-        try:
-            lambda_0 = float(self.ui.lineEdit_reference_wavelength_nm.text())
-        except ValueError:
-            return
-
-        # update the calculator, then re-run the locked fit
-        self._calculator.set_reference_wavelength(lambda_0)
-        self._refresh_locked_fit()
-
-    @Slot()
     def _update_save_buttons(self):
-        """Enable Save Selected if any rows are selected; Save All if we have any rows."""
+        """
+            Enable or disable the Save buttons based on table selection.
+
+            - Enable “Save Selected” if any row is selected in `tableView_saved_measurements`.
+            - Enable “Save All” if the model has at least one row.
+        """
         sel = self.ui.tableView_saved_measurements.selectionModel().selectedRows()
         has_sel = bool(sel)
         has_any = self._saved_model.rowCount() > 0
@@ -809,7 +997,12 @@ class MainWindowController(QMainWindow):
 
     @Slot()
     def _update_remove_buttons(self):
-        """Enable remove if any row is selected; remove-all if we have any rows."""
+        """
+            Enable or disable the Remove buttons based on table selection.
+
+            - Enable “Remove Selected” if any row is selected in `tableView_saved_measurements`.
+            - Enable “Remove All” if the model has at least one row.
+        """
         sel = self.ui.tableView_saved_measurements.selectionModel().selectedRows()
         has_sel = bool(sel)
         has_any = self._saved_model.rowCount() > 0
@@ -817,6 +1010,12 @@ class MainWindowController(QMainWindow):
         self.ui.pushButton_removeall_measurements.setEnabled(has_any)
 
     def _update_add_measurement_enable(self):
+        """
+            Enable or disable the “Add Measurement” button.
+
+            - Disable if an acquisition is currently in progress (either Single or Continuous).
+            - Enable only if there is a valid pressure result (the label is not “—”).
+        """
         # disabled while acquiring
         busy = self.ui.pushButton_continuous.isChecked() or self.ui.pushButton_single.isChecked()
         # need a real result pressure (not the em-dash)
@@ -825,6 +1024,23 @@ class MainWindowController(QMainWindow):
 
     @Slot(object)
     def _on_mouse_clicked(self, event):
+        """
+            Handle left and right mouse clicks on the spectrum plot.
+
+            - LEFT-click:
+              1. If Manual-Voigt mode is on and not locked: perform a Voigt fit
+                 on data within `self._manual_voigt_delta` nm around the cursor,
+                 lock the fit, update the measured wavelength label, compute pressure,
+                 and un-check the pseudo-Voigt toggle.
+              2. Else if Manual-fit is on and not locked: determine the clicked X position,
+                 lock a single-point fit, place a vertical line, update measured
+                 wavelength, and compute pressure.
+            - RIGHT-click:
+              1. If Manual-Voigt mode is on: un-check the toggle, clear overlays,
+                 hide the result, and disable the “Add” button.
+              2. Else if Manual-fit mode is on: un-check it, hide the vertical line,
+                 reset the pressure label to “—” (in red), and disable “Add.”
+        """
         # LEFT-click → lock either pseudo-Voigt or manual
         if event.button() == Qt.LeftButton:
             # 1) Pseudo-Voigt lock
@@ -926,7 +1142,21 @@ class MainWindowController(QMainWindow):
 
     @Slot(bool)
     def _on_manual_voigt_toggled(self, checked: bool) -> None:
-        """Start/stop live pseudo-Voigt mode, remapping the wheel to Δ control."""
+        """
+            Enter or exit live pseudo-Voigt fitting mode.
+
+            If checked:
+              - Disable Auto-fit and any Manual-fit mode.
+              - Reset any locked Voigt fit, show a vertical cursor line, start
+                `_manual_voigt_timer`, enable “Add” if data is present.
+              - Override the `ViewBox.wheelEvent` to adjust `self._manual_voigt_delta`
+                (fit window width) instead of zooming.
+            If unchecked:
+              - Restore the original `wheelEvent`.
+              - Stop `_manual_voigt_timer`. If no fit was locked, clear overlays,
+                hide the line, and reset the pressure label to “—”.
+              - Re-enable “Add” if appropriate and re-enable manual-fit toggle if needed.
+        """
 
         if checked:
             if self.ui.checkBox_autofit.isChecked():
@@ -989,10 +1219,12 @@ class MainWindowController(QMainWindow):
     @Slot()
     def _on_zoom_to_range_clicked(self) -> None:
         """
-        Snap the plot’s X‑axis to the [min,max] in the two spin‑boxes.
-        • Does nothing if either spin‑box is 0.0 or we have no data yet.
-        • Leaves Y alone unless “Auto scale intensity” is ticked,
-          which is already handled by _apply_auto_intensity_after_interaction().
+            Snap the plot’s X-axis to the [min, max] values from the fitting-range spinboxes.
+
+            Read `doubleSpinBox_min_fitting_range_nm` and `doubleSpinBox_max_fitting_range_nm`.
+            If both are nonzero and valid, call `self._plot_item.vb.setXRange(x_min, x_max, padding=0)`.
+            If Auto-fit is on, call `_update_autofit_highlight()`.
+            Then invoke `_apply_auto_intensity_after_interaction()` to re-scale Y if needed.
         """
         # 1) guard: need some plotted data
         if self._curve.xData is None or len(self._curve.xData) == 0:
@@ -1002,7 +1234,7 @@ class MainWindowController(QMainWindow):
         x_min = float(self.ui.doubleSpinBox_min_fitting_range_nm.value())
         x_max = float(self.ui.doubleSpinBox_max_fitting_range_nm.value())
 
-        # ignore the (default) 0.0 → 0.0 case
+        # ignore the (default) 0.0 → 0.0 case
         if x_min == 0.0 and x_max == 0.0:
             return
 
@@ -1022,6 +1254,17 @@ class MainWindowController(QMainWindow):
 
     @Slot()
     def _update_manual_voigt_fit(self) -> None:
+        """
+            Perform a live pseudo-Voigt fit around the last cursor X position.
+
+            - If no locked fit yet: define a window `[x0 - δ, x0 + δ]` based on
+              `self._last_cursor_x` and `self._manual_voigt_delta`.
+            - Subsample to at most 50 points, fit a Voigt model via `self._manual_voigt_fitter.fit(...)`,
+              store the resulting parameters/covariance, and draw the overlay curve.
+            - If the fitted center lies in the window, show and position
+              `self._manual_voigt_line`; otherwise hide it.
+            - Delegate pressure calculation by calling `_apply_fit(center, sigma_center, "lightblue")`.
+        """
         if self._manual_voigt_locked:
             return
 
@@ -1074,7 +1317,18 @@ class MainWindowController(QMainWindow):
 
     @Slot(bool)
     def _on_manual_fit_toggled(self, checked: bool) -> None:
-        """Enter or exit “follow” mode when the button is checked/unchecked."""
+        """
+            Enter or exit manual “follow‐the‐cursor” mode.
+
+            If checked:
+              - Disable Auto-fit and any locked Voigt fit.
+              - Show a vertical line following the cursor (but not locked).
+              - Clear any previous results, set `_manual_locked = False`, and enable
+                “Add” if data exists.
+            If unchecked:
+              - If not locked, hide the line, reset the pressure label to “—” (red),
+                and disable “Add.” Otherwise, leave the locked fit intact.
+        """
         if checked:
             if self.ui.checkBox_autofit.isChecked():
                 self.ui.checkBox_autofit.setChecked(False)
@@ -1109,7 +1363,13 @@ class MainWindowController(QMainWindow):
                 self._update_clear_fits_button()
 
     def _show_pressure_source(self) -> None:
-        """Pop up a dialog showing the full citation for the selected scale."""
+        """
+            Display a dialog showing the full citation/source text for the selected pressure scale.
+
+            Similar to `_show_temperature_source()`: fetch the currently selected
+            PressureCalibration from `self._pressure_cal`, extract `.source`,
+            and show it in a read-only `QTextEdit` inside a QDialog with Copy/Close buttons.
+        """
         # Ensure our RubyPressureScale matches the combobox
         cal = self._pressure_cal
         name = cal.name
@@ -1140,9 +1400,15 @@ class MainWindowController(QMainWindow):
 
     def _update_calculator_scales(self) -> None:
         """
-        Always sync the MeasurementCalculator with whatever is currently
-        selected in the two drop-downs.  Handles “combined” calibrations
-        (e.g. Rekhi 1999) by disabling the Temperature combo.
+            Synchronize the MeasurementCalculator with the currently selected calibration scales.
+
+            - Fetch and set `self._pressure_cal` from the pressure combobox, call
+              `self._calculator.set_pressure_scale(p_cal)`.
+            - If the pressure calibration is combined (p_cal.is_combined), disable the
+              temperature combobox, set `self._temperature_cal = None`, and call
+              `self._calculator.set_temperature_scale(None)`.
+            - Otherwise, fetch and set `self._temperature_cal` from the temperature combobox
+              and call `self._calculator.set_temperature_scale(t_cal)`.
         """
         # ---- pressure calibration (always present) ----------------------
         p_name = self.ui.comboBox_pressurecalibrations.currentText()
@@ -1165,6 +1431,15 @@ class MainWindowController(QMainWindow):
 
     @Slot(object)
     def _update_cursor_position(self, scene_pos):
+        """
+            Update the (x, y) labels and live pressure label as the mouse moves over the plot.
+
+            - Map `scene_pos` to data coordinates (x, y).
+            - Update `self._last_cursor_x` and `label_xy_position`.
+            - Compute and display the current pressure by calling `_update_pressure_label_from_last_cursor()`.
+            - If Manual-fit is on and not locked: move the red line to x, show it,
+              and copy the live pressure into `label_result_pressure_gpa`.
+        """
         # ── existing mapping to data_pt ──
         data_pt = self._plot_item.vb.mapSceneToView(scene_pos)
         x, y = data_pt.x(), data_pt.y()
@@ -1195,7 +1470,18 @@ class MainWindowController(QMainWindow):
                 self.ui.label_result_pressure_gpa.setStyleSheet("color: red;")
 
     def _update_pressure_label_from_last_cursor(self):
-        """Recompute pressure at the last‐seen cursor X, or show “—”."""
+        """
+            Compute pressure for the last cursor X position, or show “—” if invalid.
+
+            - If no data or `self._last_cursor_x` is None/outside the data range, set
+              `label_current_pressure` to “—”.
+            - Otherwise, feed (x, 0.0) into `self._calculator.set_measured_wavelength(x, 0.0)`,
+              read temperature Tm from `lineEdit_measured_temperature_c`, call
+              `self._calculator.set_measured_temperature(Tm)`, then call
+              `self._calculator.calculate_pressure()`.
+            - Display the computed pressure with two decimal places; on exception,
+              display “—”.
+        """
         # 1) Do we have any data?
         xdata = self._curve.xData
         if xdata is None or len(xdata) == 0:
@@ -1228,7 +1514,16 @@ class MainWindowController(QMainWindow):
 
     @Slot(bool)
     def _on_irradiance_toggled(self, checked: bool) -> None:
-        """When the user checks/unchecks the irradiance box, validate or reset."""
+        """
+            Enable or disable irradiance calibration when its checkbox is toggled.
+
+            If unchecked: set `self._flags["irradiance"] = False` and reset
+            `self._irrad_coef` to an array of ones.
+            If checked: attempt to read `irrad_cal` data from the spectrometer,
+            validate array length and finiteness, and if valid, set `self._flags["irradiance"] = True`
+            and `self._irrad_coef = arr`. Otherwise, show a warning, revert the checkbox,
+            and reset coefficients to ones.
+        """
         # always reset first if they turned it off
         if not checked:
             self._flags["irradiance"] = False
@@ -1284,20 +1579,37 @@ class MainWindowController(QMainWindow):
     @Slot()
     def _apply_auto_intensity_after_interaction(self) -> None:
         """
-        After any pan/zoom completes, if auto‑scale is on, re‑scale Y
-        to the data _within_ the current X view window.
+            After any pan/zoom completes, re-scale the Y axis to the data within the current X window, if enabled.
+
+            If `checkBox_auto_intensity_scale` is checked, call
+            `self._plot_item.vb.scale_intensity()`.
         """
         if self.ui.checkBox_auto_intensity_scale.isChecked():
             self._plot_item.vb.scale_intensity()
 
     @Slot()
     def _check_resume(self) -> None:
+        """
+            Called by `_resume_timer` every 200 ms to resume painting if needed.
+
+            If Continuous mode is active, painting is paused, and no mouse button is pressed,
+            call `_on_resume_painting()` to unpause and flush any pending spectrum.
+        """
         # If continuous mode is active but painting is paused, and no buttons pressed, resume
         if self.ui.pushButton_continuous.isChecked():
             if QApplication.mouseButtons() == Qt.NoButton and self._painting_paused:
                 self._on_resume_painting()
 
     def _flush_plot(self):
+        """
+            Flush a pending spectrum to the plot at most ~60 Hz.
+
+            If `self._painting_paused` is False and `self._pending_spectrum` is set,
+            unpack (wl, proc), call `_curve.setData(wl, proc)`. Then, if `checkBox_auto_intensity_scale`
+            is checked, call `self._plot_item.vb.scale_intensity()`. Enable/disable
+            live-data controls (`pushButton_manual_fit`, etc.) based on data presence.
+            If Auto-fit is on, call `_update_autofit_highlight()` and `_attempt_autofit()`.
+        """
         # allow the next flush
         self._flush_scheduled = False
         self._last_flush_time = time.perf_counter()
@@ -1340,6 +1652,12 @@ class MainWindowController(QMainWindow):
             self._attempt_autofit()
 
     def _update_clear_fits_button(self) -> None:
+        """
+            Enable or disable the “Clear All Fits” button based on fit state.
+
+            If any of `_manual_locked`, `_manual_voigt_locked`, or Auto-fit is active,
+            enable the button; otherwise disable it.
+        """
         has_fit = (
                 self._manual_locked  # manual single line locked
                 or self._manual_voigt_locked  # pseudo‑Voigt locked
@@ -1348,12 +1666,22 @@ class MainWindowController(QMainWindow):
         self.ui.pushButton_clear_all_fits.setEnabled(has_fit)
 
     def _on_pause_painting(self):
-        """Called when pan/zoom begins; stop all flushes until they finish."""
+        """
+            Pause plotting when the user starts interacting (pan/zoom) with the view.
+
+            Set `self._painting_paused = True` so that `_flush_plot()` will not update
+            until painting is resumed.
+        """
         self._painting_paused = True
 
     @Slot(str)
     def _on_pixel_binning_changed(self, txt: str) -> None:
-        """Apply the newly-picked binning factor straight to the device."""
+        """
+            Apply a new pixel binning factor when the combobox text changes.
+
+            Parse `txt` as an integer; set `self._bin_size = factor`. If a spectrometer
+            controller exists (`self._spec_ctrl`), call `self._spec_ctrl.set_binning_factor(factor)`.
+        """
         try:
             factor = int(txt)
         except ValueError:
@@ -1363,14 +1691,47 @@ class MainWindowController(QMainWindow):
             self._spec_ctrl.set_binning_factor(factor)
 
     def _on_resume_painting(self):
+        """
+            Resume plotting after paused interaction.
+
+            Set `self._painting_paused = False`. If `self._pending_spectrum` is non-None,
+            schedule a singleShot timer of 1 ms to call `_flush_plot()` once Qt’s painting
+            cycle finishes.
+        """
         self._painting_paused = False
 
-        # 1 ms singleShot ensures we run *after* Qt finishes its current paint cycle
+        # 1 ms singleShot ensures we run *after* Qt finishes its current paint cycle
         #  → flush any buffered spectrum
         if self._pending_spectrum is not None:
             QTimer.singleShot(1, self._flush_plot)
 
     def _connect_signals(self):
+        """
+            Wire all remaining UI signals related to device selection, corrections, and plot controls.
+
+            - “Refresh Device” button → `_refresh_devices(False)`
+            - “Device” combobox index change → `_on_device_selected`
+            - “Defaults” button → `_save_defaults`
+            - “Optimize” button → `_on_optimize_clicked`
+            - Correction checkboxes (electric_dark, optical_dark, stray_light, non_linearity)
+              → lambda setting self._flags[name]
+            - “Irradiance” checkbox → `_on_irradiance_toggled`
+            - “Boxcar/Smooth” checkbox and spinbox → lambda updating `self._boxcar_width`
+            - “Pixel Binning” checkbox and combobox → `_on_pixel_binning_changed`
+            - “Clear All Fits” button → `_on_clear_all_fits`
+            - “Temperature” group toggle → `_on_temp_group_toggled`
+            - “EEPROM” group toggle → `_on_eeprom_group_toggled`
+            - “TEC Enable” checkbox → `_on_tec_toggled`
+            - “TEC Setpoint” spinbox → `_on_tec_setpoint_changed`
+            - TabWidget `currentChanged` → `_on_tab_changed`
+            - “Full Range” button → `self._plot_item.vb.full_range`
+            - “Zoom” toggle → `self._plot_item.vb.enable_zoom_mode`
+            - “Auto Intensity” checkbox → `_on_auto_intensity_toggled`
+            - “Scale Intensity” button → `self._plot_item.vb.scale_intensity`
+            - “Zoom to Range” button → `_on_zoom_to_range_clicked`
+            - Ensure “Scale Intensity” button’s initial enabled state matches checkbox.
+            - “Auto-fit” checkbox → `_on_autofit_toggled`
+        """
         # device selection + refresh + defaults
         self.ui.pushButton_refresh_device.clicked.connect(lambda: self._refresh_devices(False))
         self.ui.comboBox_devices.currentIndexChanged.connect(self._on_device_selected)
@@ -1438,9 +1799,13 @@ class MainWindowController(QMainWindow):
     @Slot()
     def _attempt_autofit(self) -> None:
         """
-        If Auto-fit is checked, run two-peak Voigt between [lo,hi],
-        then plot *each* peak (R1 in blue, R2 in red) only in that window,
-        and use R1’s center to update pressure.
+            If Auto-fit is checked, start or queue a background two-peak Voigt fit.
+
+            - If `_auto_fit_running` is True, set `_auto_fit_pending = True` and return.
+            - Otherwise, get the full-spectrum data (`wl`, `cnt`). If insufficient, return.
+            - Read min/max fitting range from spinboxes, mark `_auto_fit_running = True`,
+              create an `AutoFitWorker(wl, cnt, lo, hi)` on a new QThread, and connect
+              its signals to `_on_auto_fit_finished` and `_on_auto_fit_failed`. Start the thread.
         """
         # 1) only when Auto-fit is on
         if not self.ui.checkBox_autofit.isChecked():
@@ -1476,6 +1841,14 @@ class MainWindowController(QMainWindow):
 
     @Slot()
     def _on_auto_fit_failed(self):
+        """
+            Handle a failed background auto-fit.
+
+            - Set `_auto_fit_running = False`.
+            - Stop and clean up `_auto_thread`.
+            - If `_auto_fit_pending` is True, reset the flag and schedule `_attempt_autofit()`
+              on the next event loop iteration.
+        """
         # same clean‑up as success
         self._auto_fit_running = False
         if self._auto_thread:
@@ -1489,6 +1862,17 @@ class MainWindowController(QMainWindow):
 
     @Slot(object, object)
     def _on_auto_fit_finished(self, popt, pcov) -> None:
+        """
+            Handle completion of a background auto-fit.
+
+            - Extract R1/R2 parameters (centers, amplitudes, fwhm, fractions) from `popt` and `pcov`.
+            - Draw the two-peak model overlay (`_auto_model_curve`) in the fitting window.
+            - Position `_auto_voigt_line` at R1 center and `_r2_voigt_line` at R2 center.
+            - Update `lineEdit_measured_wavelength_nm` and call `_apply_fit(center, sigma, "green")`.
+            - Store last-fit metadata (`_last_voigt_popt`, `_last_voigt_pcov`, `_last_r2_wavelength` etc.).
+            - Call `_apply_auto_intensity_after_interaction()`, mark `_auto_fit_running = False`,
+              stop/clean up the thread, and if `_auto_fit_pending` is True, schedule one more pass.
+        """
         # R1 parameters
         c1 = popt[0]
         amp1 = popt[1]
@@ -1555,6 +1939,19 @@ class MainWindowController(QMainWindow):
 
     @Slot(bool)
     def _on_autofit_toggled(self, checked: bool):
+        """
+            Enter or exit Auto-fit Voigt mode.
+
+            If checked:
+              - Disable any live Manual-Voigt or Manual-fit mode, clear overlays/results,
+                hide the single-curve plot (`_curve`) and show `_curve_inside`/`_curve_outside`.
+              - Immediately color existing spectrum segments via `_update_autofit_highlight()`,
+                attempt `_attempt_autofit()` if data exists, and enable “Clear All Fits.”
+            If unchecked:
+              - Restore single white curve (`_curve.show()`), hide split curves and fit overlays,
+                reset result labels, disable “Add,” and stop any running background fit thread.
+              - Reset `_auto_fit_running` and `_auto_fit_pending` to False, and call `_reset_last_fit_metadata()`.
+        """
         if checked:
             if self.ui.pushButton_manual_voigt_fit.isChecked() or self._manual_voigt_locked:
                 # stop live timer, clear overlays, unlock
@@ -1614,6 +2011,14 @@ class MainWindowController(QMainWindow):
             self._reset_last_fit_metadata()
 
     def _update_autofit_highlight(self):
+        """
+            Color the spectrum curve inside/outside the current fitting window.
+
+            - Use `self._curve.xData`/`yData` to split data at `lo = min_fitting_range` and
+              `hi = max_fitting_range` from spinboxes.
+            - Set `_curve_inside` to plot only the segment within [lo, hi] and `_curve_outside`
+              to plot the complement. Facilitates visual feedback before doing the actual fit.
+        """
         x = self._curve.xData
         y = self._curve.yData
         if x is None or y is None:
@@ -1639,11 +2044,15 @@ class MainWindowController(QMainWindow):
     @Slot()
     def _on_clear_all_fits(self) -> None:
         """
-        • Leave whatever acquisition is running untouched.
-        • Exit *either* fitting mode if it’s on.
-        • Remove *all* fit overlays/locks from the plot.
-        • Reset the pressure read-out to an em-dash and
-          disable the “Add” button until a new fit is made.
+            Clear all fit overlays and reset fit state without stopping acquisition.
+
+            - If Manual-Voigt is on, set its toggle to False to trigger its slot.
+            - If Manual-fit is on, set its toggle to False.
+            - Stop `_manual_voigt_timer`, clear both `_manual_voigt_curve` and `_manual_voigt_line`,
+              hide `_manual_line` and `_r2_voigt_line`, and reset all internal “last fit” metadata.
+            - Uncheck Auto-fit, hide `_auto_model_curve`, `_auto_voigt_line`, and `_r2_voigt_line`.
+            - Reset `label_result_pressure_gpa` to “—” (red), clear `lineEdit_measured_wavelength_nm`,
+              disable “Add,” and call `_reset_last_fit_metadata()`.
         """
 
         # ------------------------------------------------------------------
@@ -1687,6 +2096,17 @@ class MainWindowController(QMainWindow):
         self._reset_last_fit_metadata()
 
     def _apply_fit(self, center: float, sigma: float, color: str):
+        """
+            Compute pressure from a given peak center and error, then update the GUI.
+
+            - Call `self._calculator.set_measured_wavelength(center, sigma)`.
+            - Read Tm from `lineEdit_measured_temperature_c` and call
+              `self._calculator.set_measured_temperature(Tm)`.
+            - Attempt `p, sigma_p = self._calculator.calculate_pressure()`.
+              If successful, set `label_result_pressure_gpa` to “{p:.2f} ±{sigma_p:.2f}”
+              with the specified `color`. Otherwise, do nothing on error.
+            - After updating, call `_update_add_measurement_enable()` to possibly enable “Add.”
+        """
         # 1) feed measured λ & error
         self._calculator.set_measured_wavelength(center, sigma)
         # 2) feed measured temperature
@@ -1708,7 +2128,12 @@ class MainWindowController(QMainWindow):
         self._update_add_measurement_enable()
 
     def _reset_last_fit_metadata(self) -> None:
-        """Clear all attributes that describe the most-recent fit."""
+        """
+            Clear all attributes that describe the most-recent fit.
+
+            Set `_last_fit_type`, `_last_voigt_popt`, `_last_voigt_pcov`, `_last_r2_wavelength`,
+            `_last_r2_voigt_popt`, `_last_r2_voigt_pcov`, and `_last_baseline` to None.
+        """
         self._last_fit_type = None
         self._last_voigt_popt = None
         self._last_voigt_pcov = None
@@ -1719,9 +2144,14 @@ class MainWindowController(QMainWindow):
 
     def _refresh_locked_fit(self) -> None:
         """
-        Re-run the pressure calculation for whichever fit is currently shown
-        (manual line, manual Voigt, or Auto-fit Voigt) after any external
-        parameter change such as a new pressure-calibration selection.
+            Recompute pressure for whichever fit is currently locked or active.
+
+            - If `_manual_voigt_locked`: use `self._manual_voigt_line.value()` and
+              the sigma from `_last_voigt_pcov` to call `_apply_fit(center, sigma, "green")`.
+            - Elif `_manual_locked`: use `self._manual_line.value()` (σ = 0) to call `_apply_fit(center, 0.0, "green")`.
+            - Elif Auto-fit is on and `_last_voigt_pcov` is available:
+              parse `center` from `lineEdit_measured_wavelength_nm`, compute sigma from `_last_voigt_pcov`,
+              and call `_apply_fit(center, sigma, "green")`.
         """
         center: float | None = None
         sigma: float = 0.0           # σ_λ (nm)
@@ -1751,6 +2181,16 @@ class MainWindowController(QMainWindow):
 
     @Slot()
     def _on_optimize_clicked(self) -> None:
+        """
+            Run the acquisition optimizer dialog and apply recommended integration time.
+
+            - Collect the current correction flags (electric_dark, optical_dark,
+              stray_light, non_linearity, irradiance, boxcar, pixel_binning).
+            - Call `self._acq_mgr.run_optimize(...)` with these flags and current
+              boxcar/binning settings.
+            - If the optimizer returns a recommended T95 integration time (in µs),
+              convert it to ms or s depending on the label, and set `doubleSpinBox_integration_time_ms`.
+        """
         # Collect the current UI flags
         flags = {
             "electric_dark": self.ui.checkBox_electric_dark.isChecked(),
@@ -1781,7 +2221,12 @@ class MainWindowController(QMainWindow):
 
     @staticmethod
     def _next_integer_name(occupied: set[str], folder: Path | None) -> str:
-        """Return the lowest positive integer (as a string) not already taken."""
+        """
+            Find the lowest positive integer (as a string) not already used.
+
+            While `"1"` is in `occupied` or `(folder / "1.txt")` exists, increment
+            from 1 upwards. Return the first integer (converted to string) that is free.
+        """
         i = 1
         while (
                 str(i) in occupied or
@@ -1792,6 +2237,18 @@ class MainWindowController(QMainWindow):
 
     @Slot()
     def _on_add_measurement(self):
+        """
+            Create a new MeasurementRecord and add it via MeasurementManager.
+
+            1. Determine a unique, file-safe name:
+               - If the user typed a name, sanitize it via `_sanitize_name()`;
+                 if the result is empty or already used, fall back to `_next_integer_name()`.
+               - Otherwise, use `_next_integer_name()` directly.
+            2. Gather all measurement data (R1 wavelength, pressure label, temperature,
+               calibration names, spectrum arrays, integration time, scans, reference values,
+               spectrometer ID, fit metadata, etc.) and build a `MeasurementRecord(...)`.
+            3. Call `self._measurement_manager.add(rec)` to insert and optionally auto-save.
+        """
         # ------------------------------------------------------------------
         # 1) Resolve a unique, file-safe name
         # ------------------------------------------------------------------
@@ -1880,11 +2337,11 @@ class MainWindowController(QMainWindow):
 
     def _on_auto_intensity_toggled(self, checked: bool) -> None:
         """
-        When the user clicks the “Auto scale intensity” checkbox, if they
-        turn it on we immediately scale the Y axis to the last data.
-        (And on each new spectrum we’ll do it again in _flush_plot.)
-        :param checked:
-        :return:
+        Handle toggling of the “Auto scale intensity” checkbox.
+
+        If checked: disable the “Scale Intensity” button and immediately call
+          `self._plot_item.vb.scale_intensity()`.
+        If unchecked: re-enable the “Scale Intensity” button.
         """
 
         # disable the one‑off button whenever auto‑mode is on
@@ -1895,11 +2352,25 @@ class MainWindowController(QMainWindow):
             self._plot_item.vb.scale_intensity()
 
     def _setup_integration_widgets(self):
+        """
+            Install event filters on the integration-time spinbox and its label.
+
+            Watch for clicks on `doubleSpinBox_integration_time_ms` and `label_integrationtime`
+            to toggle between ms and s units (handled in `eventFilter`).
+        """
         # watch clicks on the spinbox *and* on the label
         self.ui.doubleSpinBox_integration_time_ms.installEventFilter(self)
         self.ui.label_integrationtime.installEventFilter(self)
 
     def _refresh_devices(self, first_time: bool=False):
+        """
+            Repopulate the device dropdown with currently connected spectrometers.
+
+            - Call `SpectrometerController.list_devices()`.
+            - Retrieve `last_selected_device` from `QSettings` and/or `SettingsManager`.
+            - Populate `comboBox_devices` with each `device_id`, preserve the last selection
+              if it still exists. If `first_time=True`, also load from `SettingsManager`.
+        """
         devs = SpectrometerController.list_devices()
         last = self._qt.value("last_selected_device", "")
         self.ui.comboBox_devices.clear()
@@ -1919,6 +2390,26 @@ class MainWindowController(QMainWindow):
 
     @Slot(int)
     def _on_device_selected(self, idx: int):
+        """
+            Handle selection of a new spectrometer from the combobox.
+
+            - If `idx < 0`, do nothing.
+            - Get `raw_dev` and `did = comboBox_devices.currentText()`.
+            - Save `did` to `QSettings` and `SettingsManager`.
+            - Stop the temperature timer, clear `_temp_data`, clear the plot.
+            - Instantiate `SpectrometerController(raw_dev)` as `self._spec_ctrl`.
+            - If `_acq_mgr` is None, create `AcquisitionController(self._spec_ctrl, parent=self)`
+              and call `_setup_acquisition_connections()`. Otherwise, call
+              `self._acq_mgr.set_spectrometer(self._spec_ctrl)`.
+            - Read integration limits from `self._spec_ctrl.integration_limits_us`,
+              set spinbox ranges and default values.
+            - Call `_grab_feature_data()`, `_apply_feature_enables()`, `_populate_pixel_binning_options()`.
+            - Attempt to `get_device_settings(did)` from `SettingsManager`; if found,
+              call `_apply_saved_settings(saved)`. If not, set all corrections off,
+              default boxcar & binning to 1, disable TEC checkbox.
+            - Finally, call `_populate_device_information()` and `_on_tec_toggled()`
+              to update TEC state if needed.
+        """
         if idx < 0: return
         raw_dev = self.ui.comboBox_devices.itemData(idx)
         did = self.ui.comboBox_devices.currentText()
@@ -1990,7 +2481,16 @@ class MainWindowController(QMainWindow):
         self._on_tec_toggled(self.ui.checkBox_thermoelectric_enable.isChecked())
 
     def _populate_pixel_binning_options(self) -> None:
-        """Fill comboBox_pixel_binning with 1…max and select default or saved."""
+        """
+            Fill the pixel-binning combobox with valid factors for the current device.
+
+            - If no “pixel_binning” feature exists, disable the combobox.
+            - Otherwise, query `feat.get_max_binning_factor()` and
+              `feat.get_default_binning_factor()` from `self._spec_ctrl.features`.
+            - Add items “1” through `max_f` to `comboBox_pixel_binning`.
+            - Retrieve a saved binning setting (if any) from `SettingsManager`;
+              if not found, select the default factor.
+        """
         combo = self.ui.comboBox_pixel_binning
         combo.clear()
 
@@ -2017,6 +2517,19 @@ class MainWindowController(QMainWindow):
         combo.setCurrentIndex(idx)
 
     def _grab_feature_data(self):
+        """
+            Query the spectrometer for dark-pixel ranges, nonlinearity, stray-light, and irradiance coefficients.
+
+            - Look for a feature implementing `get_electric_dark_pixel_ranges()`.
+              If found, read and split electric and optical dark pixel ranges
+              into `self._edark` and `self._odark`, plus store active pixel ranges.
+            - If “nonlinearity_coefficients” feature exists, read it into `self._nl_coef`.
+              Otherwise, set `self._nl_coef = np.ones(1)`.
+            - If “stray_light_coefficients” feature exists, read it into `self._sl_coef`.
+              Otherwise, set `self._sl_coef = np.zeros(1)`.
+            - If “irrad_cal” feature exists, read it into `self._irrad_coef`.
+              Otherwise, set `self._irrad_coef = np.ones(1)`.
+        """
         f = self._spec_ctrl.features
 
         # electric & optical dark pixel ranges
@@ -2070,6 +2583,22 @@ class MainWindowController(QMainWindow):
             self._irrad_coef = np.ones(1)
 
     def _apply_feature_enables(self):
+        """
+            Enable or disable correction checkboxes and related controls based on available features.
+
+            - Enable `checkBox_electric_dark` unconditionally.
+            - Enable `checkBox_optical_dark` if `_odark` is nonempty.
+            - Enable `checkBox_stray_light_correction` if “stray_light_coefficients” feature exists.
+            - Enable `checkBox_non_linearity` if “nonlinearity_coefficients” exists.
+            - Enable `checkBox_irradiance` if “irrad_cal” exists.
+            - Enable `checkBox_boxcar_smooth` and its spinbox if “spectrum_processing” exists.
+            - Enable `checkBox_pixel_binning` and its combobox if “pixel_binning” exists.
+            - Enable `checkBox_thermoelectric_enable` if “thermo_electric” exists,
+              then call `_update_tec_ui` to toggle spinbox/label accordingly.
+            - Always enable the temperature group (`groupBox_4`).
+            - Enable EEPROM group if “eeprom” feature exists.
+        """
+
         f = self._spec_ctrl.features
 
         self.ui.checkBox_electric_dark.setEnabled(True)
@@ -2115,9 +2644,16 @@ class MainWindowController(QMainWindow):
     @Slot(np.ndarray, np.ndarray)
     def _on_spectrum_ready(self, wl: np.ndarray, raw_counts: np.ndarray) -> None:
         """
-        Receive a freshly acquired spectrum, apply all user‑selected
-        corrections, subtract any stored background held in
-        AcquisitionManager, then queue a (throttled) plot update.
+            Handle a newly acquired spectrum (wl, raw_counts) from the spectrometer.
+
+            - Cache `self._last_raw_counts` and if shape changed, store `self._last_wl`,
+              initialize fitting-range spinboxes to [wl.min(), wl.max()].
+            - Build a processed array `proc = raw_counts.astype(float)` by applying
+              the sequence of enabled corrections:
+              optical-dark → stray-light → irradiance → boxcar smoothing → background subtraction.
+            - Set `self._pending_spectrum = (self._last_wl, proc)`. If not paused and
+              not already scheduled, compute a 16 ms delay and schedule `QTimer.singleShot`
+              to call `_flush_plot()`.
         """
         self._last_raw_counts = raw_counts
 
@@ -2132,7 +2668,7 @@ class MainWindowController(QMainWindow):
         wl_ref = self._last_wl  # always plot with the cached array
 
         # ────────────────────────────────────────────────
-        # 3 .  Build the processed counts array
+        # 3.  Build the processed counts array
         # ────────────────────────────────────────────────
         proc = raw_counts.astype(float)
 
@@ -2161,7 +2697,7 @@ class MainWindowController(QMainWindow):
             proc -= bg[1]
 
         # ────────────────────────────────────────────────
-        # 4 .  Queue a redraw (max ~60 Hz) with flushing logic
+        # 4.  Queue a redraw (max ~60 Hz) with flushing logic
         # ────────────────────────────────────────────────
         self._pending_spectrum = (wl_ref, proc)
         if not self._painting_paused and not self._flush_scheduled:
@@ -2174,6 +2710,16 @@ class MainWindowController(QMainWindow):
     # ——————————————————— temperature ———————————————————
     @Slot(bool)
     def _on_temp_group_toggled(self, chk: bool):
+        """
+            Show or hide the embedded temperature-vs-time plot.
+
+            If `chk` is True:
+              - call `widget_temperatureplot.getPlotItem()` → `vb`, disable autoRange on X,
+                set X range to [0,300] and invert X so “seconds ago” flows from right to left.
+              - Clear `_temp_data`, call `_sample_temperature()` once, and start `_temp_timer`.
+            If `chk` is False:
+              - Stop `_temp_timer` and clear `widget_temperatureplot`.
+        """
         # show/hide the PlotWidget
         self.ui.widget_temperatureplot.setVisible(chk)
 
@@ -2195,7 +2741,15 @@ class MainWindowController(QMainWindow):
 
     @Slot()
     def _sample_temperature(self):
-        # pull from the same “thermo_electric” feature that your label uses
+        """
+            Read the current temperature from the TEC feature and update the temperature plot.
+
+            - If “thermo_electric” feature exists, attempt `feat.read_temperature_degrees_celsius()`.
+            - Append (timestamp, temp) to `self._temp_data`, drop points older than 300 s.
+            - Build an X array of “seconds ago” (now − old_timestamps) and Y array of temps.
+            - Call `widget_temperatureplot.plot(ages, temps, clear=True)` and set axis labels.
+        """
+        # pull from the same “thermo_electric” feature that the label uses
         feat_list = self._spec_ctrl.features.get("thermo_electric", [])
         if not feat_list:
             return
@@ -2208,7 +2762,7 @@ class MainWindowController(QMainWindow):
         now = time.time()
         self._temp_data.append((now, temp))
         cutoff = now - 300
-        # drop anything older than 5 min
+        # drop anything older than 5 min
         while self._temp_data and self._temp_data[0][0] < cutoff:
             self._temp_data.popleft()
 
@@ -2225,7 +2779,19 @@ class MainWindowController(QMainWindow):
     # ——————————————————— EEPROM ———————————————————
     @Slot(bool)
     def _on_eeprom_group_toggled(self, checked: bool):
-        """Show/hide and populate the EEPROM table view."""
+        """
+            Show or hide the EEPROM information table view.
+
+            If `checked` is False, hide `tableView_eeprom`. If True:
+              - Create a new `QStandardItemModel(0, 3)` with headers ["Slot", "Value", "Explanation"].
+              - Iterate slots 0–255, call `spec._spec.f.eeprom.eeprom_read_slot(slot)`,
+                catch SeaBreezeError or generic exceptions to break when no more slots.
+              - Format `raw` for slot 17 specially (parse bytes for TEC/fan state, setpoint, threshold),
+                otherwise decode ASCII or convert to string.
+              - Look up a human‐readable explanation from `slot_explanations`, append a row
+                of non-editable `QStandardItem`s for slot, val, explanation.
+              - Set `tv.setModel(model)`, call `resizeColumnsToContents()`, set scrollbars and headers.
+        """
         tv = self.ui.tableView_eeprom
         tv.setVisible(checked)
         if not checked:
@@ -2314,6 +2880,17 @@ class MainWindowController(QMainWindow):
 
     # ————————————————— defaults persistence —————————————————
     def _save_defaults(self):
+        """
+            Save current UI settings (correction flags, boxcar width, binning, TEC power, etc.) for the current device.
+
+            - Retrieve `did = self._spec_ctrl.device_id`.
+            - Build a dict `cfg` with boolean values for “electric_dark,” “optical_dark,”
+              “stray_light,” “non_linearity,” “irradiance,” “boxcar_width,” “bins,”
+              “thermoelectric,” and “temp_setpoint.”
+            - Read `ref_wl` from `lineEdit_reference_wavelength_nm`; if it differs from
+              `DEFAULT_REF_WL`, add `"reference_wavelength": ref_wl` to `cfg`.
+            - Call `self._sm.set_device_settings(did, cfg)` to persist for next startup.
+        """
         did = self._spec_ctrl.device_id
         cfg = {
             "electric_dark":    self.ui.checkBox_electric_dark.isChecked(),
@@ -2342,10 +2919,16 @@ class MainWindowController(QMainWindow):
 
     def _apply_saved_settings(self, saved: dict):
         """
-        Restore per‑device defaults into the UI.
-        We treat “irradiance” specially so that
-        1) loading from JSON doesn’t pop our guard dialog
-        2) we still validate the array and turn it off if invalid
+            Restore per-device defaults from a settings dict.
+
+            - If `"reference_wavelength"` in saved, update `lineEdit_reference_wavelength_nm`
+              and call `self._calculator.set_reference_wavelength(ref_wl)`, then `_refresh_locked_fit()`.
+            - For each correction key in `["electric_dark", "optical_dark", "stray_light", "non_linearity"]`,
+              set the corresponding checkbox state and update `self._flags[key]`.
+            - Handle `"irradiance"` specially: block its signal, set checkbox to desired state,
+              validate the array via `self._spec_ctrl.features["irrad_cal"]`, fall back to off
+              (with a warning) if invalid.
+            - Restore `"boxcar_width"`, `"bins"`, `"thermoelectric"`, and `"temp_setpoint"` if present.
         """
 
         # 0)  Per-device reference wavelength  ← NEW
@@ -2442,7 +3025,13 @@ class MainWindowController(QMainWindow):
             self.ui.spinBox_tec_temp_setpoint.setValue(saved["temp_setpoint"])
 
     def _update_tec_ui(self, enabled: bool):
-        """Enable/disable the setpoint & current‐temp UI based on support+checkbox."""
+        """
+            Enable or disable the TEC setpoint and current-temperature labels.
+
+            - If the device has a “thermo_electric” feature and `enabled` is True,
+              enable `label_current_temperature` and `label_current_temperature_value`
+              as well as `spinBox_tec_temp_setpoint`. Otherwise, disable them.
+        """
         has = bool(self._spec_ctrl.features.get("thermo_electric"))
         ok = has and enabled
         # label + value
@@ -2453,7 +3042,16 @@ class MainWindowController(QMainWindow):
 
     @Slot(bool)
     def _on_tec_toggled(self, checked: bool) -> None:
-        """Called when the user toggles the TEC enable checkbox."""
+        """
+            Handle toggling of the TEC enable checkbox.
+
+            - If no “thermo_electric” feature: do nothing.
+            - If checked: read and store the baseline temperature via
+              `feat.read_temperature_degrees_celsius()`, then call `feat.enable_tec(True)`.
+            - If unchecked: call `feat.enable_tec(False)`.
+            - On exception, show a critical error dialog and rollback the checkbox state.
+            - Enable or disable `spinBox_tec_temp_setpoint` based on `checked`.
+        """
         feat_list = self._spec_ctrl.features.get("thermo_electric", [])
         if not feat_list:
             return
@@ -2481,7 +3079,13 @@ class MainWindowController(QMainWindow):
 
     @Slot(int)
     def _on_tec_setpoint_changed(self, value: int):
-        """When the user adjusts the spinbox, send the new goal to the spectrometer."""
+        """
+            Send the new TEC temperature setpoint to the spectrometer.
+
+            - If no “thermo_electric” feature: return.
+            - Attempt `feat.set_temperature_setpoint_degrees_celsius(value)`.
+              On exception, show a warning dialog.
+        """
         feat_list = self._spec_ctrl.features.get("thermo_electric", [])
         if not feat_list:
             return
@@ -2491,7 +3095,14 @@ class MainWindowController(QMainWindow):
             QMessageBox.warning(self, "TEC Setpoint", f"Could not set temperature setpoint:\n{e}")
 
     def _update_tec_temperature(self):
-        """Poll the current TEC temperature once a second (only when the Settings tab is active)."""
+        """
+            Poll the current TEC temperature and display it in the UI.
+
+            - If no “thermo_electric” feature: return.
+            - Attempt `feat.read_temperature_degrees_celsius()`. On success,
+              update `label_current_temperature_value` with “{t:.1f} °C”.
+            - On exception, ignore it silently.
+        """
         feat_list = self._spec_ctrl.features.get("thermo_electric", [])
         if not feat_list:
             return
@@ -2503,7 +3114,15 @@ class MainWindowController(QMainWindow):
             pass
 
     def _check_tec_power(self):
-        """After enabling, verify the temp has dropped — else warn about missing PSU."""
+        """
+            After enabling the TEC, verify that the temperature has dropped.
+
+            - If no “thermo_electric” feature or `_initial_tec_temp` is None: return.
+            - Read the current temperature; if it is not at least 0.5 °C below
+              `_initial_tec_temp`, warn the user that the PSU may be disconnected,
+              and automatically un-check `checkBox_thermoelectric_enable`.
+            - Reset `_initial_tec_temp` to None once done.
+        """
         feat_list = self._spec_ctrl.features.get("thermo_electric", [])
         if not feat_list or self._initial_tec_temp is None:
             return
@@ -2524,7 +3143,13 @@ class MainWindowController(QMainWindow):
 
     @Slot(int)
     def _on_tab_changed(self, index: int):
-        """Start/stop our TEC‑poll timer whenever the user switches tabs."""
+        """
+            Start or stop the TEC-poll timer when the user switches tabs.
+
+            - If `index == 0` (Settings tab) and a “thermo_electric” feature exists:
+              start `_tec_timer` and, if `_initial_tec_temp` is not None, schedule `QTimer.singleShot(5000, self._check_tec_power)`.
+            - Otherwise, stop `_tec_timer`.
+        """
         # index 0 is Settings
         feat_list = self._spec_ctrl.features.get("thermo_electric", [])
         if index == 0 and feat_list:
@@ -2538,6 +3163,22 @@ class MainWindowController(QMainWindow):
 
     @Slot()
     def _populate_device_information(self):
+        """
+            Populate the device information panel with spectrometer metadata.
+
+            - Retrieve model/serial from `spec._spec.model`/`spec._spec.serial_number`.
+              Display as “Model / Serial” or fallback to a single field if one is missing.
+            - If “revision” feature exists, read `firmware_revision` and `hardware_revision`;
+              otherwise show “Not supported” and set related tooltips.
+            - Query `spec.spectrum_raw()` to get wavelength array, display pixel count
+              and factory wavelength range (“{wl[0]:.1f}–{wl[-1]:.1f} nm”); on failure show “—”.
+            - Read integration limits in µs and format as “X ms—Y ms” or “X ms—Z s” depending on size.
+            - Attempt `spec._spec.f.spectrometer.get_maximum_intensity()`, display saturation limit.
+              On exception, show “—”.
+            - Indicate whether a thermistor is present (“Yes”/“No”), and show the number
+              of irradiance coefficients if “irrad_cal” exists (e.g. “N values”) or “—”.
+            - Indicate if a shutter is present (“Yes”/“No”).
+        """
         spec = self._spec_ctrl
         ui = self.ui
 
@@ -2627,6 +3268,17 @@ class MainWindowController(QMainWindow):
 
     # ————————————————— unit toggle —————————————————
     def eventFilter(self, watched, event):
+        """
+            Override QWidget.eventFilter to toggle integration-time units on label clicks.
+
+            - If `watched` is `label_integrationtime` and `event` is a MouseButtonRelease:
+              1. Toggle between “Integration time (ms):” and “Integration time (s):”.
+              2. Convert the spinbox value accordingly (ms→s or s→ms), adjust decimals,
+                 range, and spinbox value to match new units.
+              3. Push the new integration time (in µs) to the spectrometer.
+              Return True to consume the event.
+            - Otherwise, defer to the superclass handler.
+        """
         # 1) If it’s a click on the integration‐time label, handle & consume it
         if (
                 watched is self.ui.label_integrationtime
@@ -2664,7 +3316,12 @@ class MainWindowController(QMainWindow):
         return super().eventFilter(watched, event)
 
     def closeEvent(self, ev):
-        """Ensure TEC is turned off when the user closes the GUI."""
+        """
+            Ensure the TEC is turned off when the user closes the GUI.
+
+            If a “thermo_electric” feature exists, call `feat.enable_tec(False)` to
+            disable it. Then call the superclass `closeEvent(ev)`.
+        """
         # if the device has a TEC feature, disable it
         feat_list = self._spec_ctrl.features.get("thermo_electric", [])
         if feat_list:
@@ -2676,6 +3333,11 @@ class MainWindowController(QMainWindow):
 
     @Slot()
     def _disable_tec_on_exit(self):
+        """
+            Disable the TEC in response to the application’s aboutToQuit signal.
+
+            If a “thermo_electric” feature exists, call `feat.enable_tec(False)`.
+        """
         feat_list = self._spec_ctrl.features.get("thermo_electric", [])
         if feat_list:
             try:
