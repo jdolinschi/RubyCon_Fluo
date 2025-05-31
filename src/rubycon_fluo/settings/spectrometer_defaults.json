@@ -1,0 +1,17 @@
+{
+  "last_selected": "QE65000:QEPB0092",
+  "devices": {
+    "QE65000:QEPB0092": {
+      "electric_dark": true,
+      "optical_dark": false,
+      "stray_light": true,
+      "non_linearity": true,
+      "irradiance": false,
+      "boxcar_width": 1,
+      "bins": 1,
+      "thermoelectric": false,
+      "temp_setpoint": -10,
+      "reference_wavelength": 694.364
+    }
+  }
+}

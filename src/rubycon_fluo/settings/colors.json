@@ -1,0 +1,10 @@
+{
+"raw_data_curve": "#FFFFFF",
+"curve_inside": "#FFFFFF",
+"curve_outside": "#888888",
+"fit_curve": "#00FFFF",
+"manual_follow_line": "#FF5555",
+"manual_locked_line": "#55FF55",
+"r1_locked_line": "#55FF55",
+"r2_reference_line": "#AAAAAA"
+}
