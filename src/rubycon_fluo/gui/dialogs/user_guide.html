@@ -2,9 +2,330 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>RubyCon_Fluo User Guide</title>
+    <style>
+        /* Simple styling for banner and navigation */
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+        #banner {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+        }
+        #banner img {
+            height: 50px;
+            margin-right: 15px;
+        }
+        #banner h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+        #toc {
+            background-color: #ecf0f1;
+            padding: 15px 20px;
+        }
+        #toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        #toc li {
+            margin-bottom: 8px;
+        }
+        #toc a {
+            text-decoration: none;
+            color: #34495e;
+        }
+        #toc a:hover {
+            text-decoration: underline;
+        }
+        section {
+            padding: 30px 20px;
+            max-width: 800px;
+            margin: auto;
+        }
+        section h1 {
+            border-bottom: 2px solid #bdc3c7;
+            padding-bottom: 5px;
+        }
+        section h2 {
+            margin-top: 20px;
+            color: #2c3e50;
+        }
+        .subsection {
+            margin-left: 20px;
+            margin-bottom: 20px;
+        }
+        footer {
+            background-color: #ecf0f1;
+            text-align: center;
+            padding: 15px 0;
+            margin-top: 40px;
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+    </style>
 </head>
 <body>
 
+    <!-- Banner with logo and title -->
+    <div id="banner">
+        <img src="resources/images/logo-connected.svg" alt="RubyCon_Fluo Logo" />
+        <h1>RubyCon_Fluo User Guide</h1>
+    </div>
+
+    <!-- Short program description -->
+    <section>
+        <p>
+            RubyCon Flux allows you to collect and fit ruby‐fluorescence spectra from OceanOptics spectrometers. It supports manual peak selection, pseudo‐Voigt fitting, and an automated two‐peak Voigt model for R1 and R2 lines. Once fitted, you can convert wavelength position of the R1 peak to pressure at a given temperature using various literature calibrations, and save both raw spectra and fit metadata to text files.
+        </p>
+    </section>
+
+    <!-- Table of Contents with anchor links -->
+    <nav id="toc">
+        <h2>Contents</h2>
+        <ul>
+            <li><a href="#introduction">1. Introduction</a></li>
+            <li><a href="#installation">2. Installation</a>
+                <ul class="subsection">
+                    <li><a href="#requirements">2.1 System Requirements</a></li>
+                    <li><a href="#dependencies">2.2 Dependencies</a></li>
+                    <li><a href="#setup">2.3 Setup & Configuration</a></li>
+                </ul>
+            </li>
+            <li><a href="#quick-start">3. Quick Start Guide</a>
+                <ul class="subsection">
+                    <li><a href="#launch">3.1 Launching the Application</a></li>
+                    <li><a href="#basic-workflow">3.2 Basic Workflow</a></li>
+                </ul>
+            </li>
+            <li><a href="#ui-overview">4. User Interface Overview</a>
+                <ul class="subsection">
+                    <li><a href="#main-window">4.1 Main Window Components</a></li>
+                    <li><a href="#controls">4.2 Control Panels and Buttons</a></li>
+                </ul>
+            </li>
+            <li><a href="#data-acquisition">5. Data Acquisition</a>
+                <ul class="subsection">
+                    <li><a href="#spectrometer-selection">5.1 Spectrometer Selection</a></li>
+                    <li><a href="#integration-settings">5.2 Integration Time & Averaging</a></li>
+                    <li><a href="#background-collection">5.3 Background Collection</a></li>
+                </ul>
+            </li>
+            <li><a href="#fitting-modes">6. Fitting Modes</a>
+                <ul class="subsection">
+                    <li><a href="#manual-mode">6.1 Manual Peak Selection</a></li>
+                    <li><a href="#manual-voigt-mode">6.2 Manual Voigt Mode</a></li>
+                    <li><a href="#auto-fit-mode">6.3 Automatic Two‐Peak Voigt Fit</a></li>
+                </ul>
+            </li>
+            <li><a href="#pressure-calibration">7. Pressure & Temperature Calibration</a>
+                <ul class="subsection">
+                    <li><a href="#selecting-calibrations">7.1 Selecting Calibration Sources</a></li>
+                    <li><a href="#combined-vs-separate">7.2 Combined vs. Separate Calibrations</a></li>
+                </ul>
+            </li>
+            <li><a href="#saving-exporting">8. Saving & Exporting Data</a>
+                <ul class="subsection">
+                    <li><a href="#saving-measurements">8.1 Saving Measurements</a></li>
+                    <li><a href="#auto-save">8.2 Auto‐Save Feature</a></li>
+                </ul>
+            </li>
+            <li><a href="#settings-preferences">9. Settings & Preferences</a>
+                <ul class="subsection">
+                    <li><a href="#device-defaults">9.1 Device Defaults</a></li>
+                    <li><a href="#ui-preferences">9.2 UI Preferences</a></li>
+                </ul>
+            </li>
+            <li><a href="#troubleshooting">10. Troubleshooting & FAQs</a></li>
+            <li><a href="#appendix">11. Appendix</a>
+                <ul class="subsection">
+                    <li><a href="#file-formats">11.1 Text File Format Specification</a></li>
+                    <li><a href="#common-errors">11.2 Common Error Messages</a></li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Sections with placeholder content -->
+    <hr>
+    <section id="introduction">
+        <h1>1. Introduction</h1>
+        <p>
+            This chapter introduces RubyCon Fluo, its purpose, and high‐level design.
+        </p>
+        <ul>
+            <li>Motivation for collecting ruby‐fluorescence spectra in high‐pressure experiments</li>
+            <li>Key features of the application</li>
+            <li>Overview of the workflow—from data acquisition to pressure calculation</li>
+        </ul>
+        <!-- Placeholder for further discussion -->
+    </section>
+    <hr>
+    <section id="installation">
+        <h1>2. Installation</h1>
+
+        <h2 id="requirements">2.1 System Requirements</h2>
+        <p>
+            <!-- Placeholder: Minimum OS, RAM, Python version, etc. -->
+        </p>
+
+        <h2 id="dependencies">2.2 Dependencies</h2>
+        <p>
+            <!-- Placeholder: List of required Python packages, e.g., PySide6, numpy, scipy, numba, pyqtgraph, seabreeze, etc. -->
+        </p>
+
+        <h2 id="setup">2.3 Setup & Configuration</h2>
+        <p>
+            <!-- Placeholder: Steps to clone the repository, create a virtual environment, install dependencies via pip, and verify installation. -->
+        </p>
+    </section>
+
+    <section id="quick-start">
+        <h1>3. Quick Start Guide</h1>
+
+        <h2 id="launch">3.1 Launching the Application</h2>
+        <p>
+            <!-- Placeholder: Command‐line or desktop shortcut instructions to start the GUI. -->
+        </p>
+
+        <h2 id="basic-workflow">3.2 Basic Workflow</h2>
+        <ol>
+            <li>Select your OceanOptics spectrometer from the Devices dropdown.</li>
+            <li>Adjust integration time and number of scans, then click “Single” or “Continuous” to acquire spectra.</li>
+            <li>Use one of the fitting modes (Manual, Manual‐Voigt, Auto) to locate R1 (and R2) peaks.</li>
+            <li>Press “Add Measurement” to save the current fit and raw spectrum to the table.</li>
+            <li>Optionally enable Auto‐Save to write measurements to text files automatically.</li>
+        </ol>
+    </section>
+
+    <section id="ui-overview">
+        <h1>4. User Interface Overview</h1>
+
+        <h2 id="main-window">4.1 Main Window Components</h2>
+        <ul>
+            <li><strong>Menu Bar:</strong> Provides access to the User Guide and About dialogs.</li>
+            <li><strong>Device Panel:</strong> Dropdown to select spectrometer; buttons to refresh or set defaults.</li>
+            <li><strong>Spectrum Plot:</strong> Real‐time display of corrected spectra with overlays for fitting.</li>
+            <li><strong>Control Panel:</strong> Integration time, scan averaging, correction toggles, and fit options.</li>
+            <li><strong>Measurement Table:</strong> Lists saved measurements and supports exporting to text files.</li>
+        </ul>
+
+        <h2 id="controls">4.2 Control Panels and Buttons</h2>
+        <p>
+            <!-- Placeholder: Explain each button/checkbox—e.g., “Optimize,” “Background,” “Manual Fit,” etc. -->
+        </p>
+    </section>
+
+    <section id="data-acquisition">
+        <h1>5. Data Acquisition</h1>
+
+        <h2 id="spectrometer-selection">5.1 Spectrometer Selection</h2>
+        <p>
+            <!-- Placeholder: How to detect connected devices, and pick the correct one. -->
+        </p>
+
+        <h2 id="integration-settings">5.2 Integration Time & Averaging</h2>
+        <p>
+            <!-- Placeholder: Explain integration time units (ms vs s toggle) and scan averaging. -->
+        </p>
+
+        <h2 id="background-collection">5.3 Background Collection</h2>
+        <p>
+            <!-- Placeholder: Describe how to collect and apply a background spectrum before taking measurements. -->
+        </p>
+    </section>
+
+    <section id="fitting-modes">
+        <h1>6. Fitting Modes</h1>
+
+        <h2 id="manual-mode">6.1 Manual Peak Selection</h2>
+        <p>
+            <!-- Placeholder: Describe how LEFT‐click locks a single‐point fit and updates pressure. RIGHT‐click clears it. -->
+        </p>
+
+        <h2 id="manual-voigt-mode">6.2 Manual Voigt Mode</h2>
+        <p>
+            <!-- Placeholder: Describe enabling “Manual Voigt,” adjusting the fit window with mouse wheel, and LEFT‐click to lock. -->
+        </p>
+
+        <h2 id="auto-fit-mode">6.3 Automatic Two‐Peak Voigt Fit</h2>
+        <p>
+            <!-- Placeholder: Explain Auto‐Fit, highlighting the fitting range, drawing both R1 and R2 lines, and interpreting results. -->
+        </p>
+    </section>
+
+    <section id="pressure-calibration">
+        <h1>7. Pressure & Temperature Calibration</h1>
+
+        <h2 id="selecting-calibrations">7.1 Selecting Calibration Sources</h2>
+        <p>
+            <!-- Placeholder: List available calibration options (e.g., Shen et al. 2020, Yamaoka et al. 1980, Rekhi 1999). -->
+        </p>
+
+        <h2 id="combined-vs-separate">7.2 Combined vs. Separate Calibrations</h2>
+        <p>
+            <!-- Placeholder: Explain the difference between combined P–T calibrations (e.g., Rekhi) and separate P and T calibrations. -->
+        </p>
+    </section>
+
+    <section id="saving-exporting">
+        <h1>8. Saving & Exporting Data</h1>
+
+        <h2 id="saving-measurements">8.1 Saving Measurements</h2>
+        <p>
+            <!-- Placeholder: How to select rows in the table and click “Save Selected” or “Save All.” Describe text file contents. -->
+        </p>
+
+        <h2 id="auto-save">8.2 Auto‐Save Feature</h2>
+        <p>
+            <!-- Placeholder: Explain enabling Auto‐Save, choosing a folder, and naming conventions (_1, _2, etc.). -->
+        </p>
+    </section>
+
+    <section id="settings-preferences">
+        <h1>9. Settings & Preferences</h1>
+
+        <h2 id="device-defaults">9.1 Device Defaults</h2>
+        <p>
+            <!-- Placeholder: How to set defaults per device (e.g., reference wavelength, correction flags, binning). -->
+        </p>
+
+        <h2 id="ui-preferences">9.2 UI Preferences</h2>
+        <p>
+            <!-- Placeholder: Any user‐configurable UI options—e.g., auto‐intensity, zoom behavior, font sizes. -->
+        </p>
+    </section>
+
+    <section id="troubleshooting">
+        <h1>10. Troubleshooting &amp; FAQs</h1>
+        <p>
+            <!-- Placeholder: Common issues (e.g., no spectrometer found, fit fails, warnings about calibration arrays).
+                 Provide solutions or workarounds. -->
+        </p>
+    </section>
+
+    <section id="appendix">
+        <h1>11. Appendix</h1>
+
+        <h2 id="file-formats">11.1 Text File Format Specification</h2>
+        <p>
+            <!-- Placeholder: Describe the exact format of the saved measurement files, columns, metadata fields, and raw spectrum lines. -->
+        </p>
+
+        <h2 id="common-errors">11.2 Common Error Messages</h2>
+        <p>
+            <!-- Placeholder: List typical errors (e.g., “No data in fitting range,” “Calibration array length mismatch”) with explanations. -->
+        </p>
+    </section>
+
+    <footer>
+        &copy; 2025 RubyCon_Fluo Project. All rights reserved.
+    </footer>
 </body>
 </html>
