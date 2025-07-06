@@ -19,8 +19,8 @@
             align-items: center;
         }
         #banner img {
-            height: 50px;
-            margin-right: 15px;
+            height: 400px;
+            margin-right: 100px
         }
         #banner h1 {
             margin: 0;
@@ -46,7 +46,7 @@
         }
         section {
             padding: 30px 20px;
-            max-width: 800px;
+            max-width: 2160px;
             margin: auto;
         }
         section h1 {
@@ -69,20 +69,56 @@
             font-size: 0.9em;
             color: #7f8c8d;
         }
+
+        /* wrapper to hold both tables */
+        .components-container {
+          display: flex;
+          width: 1024px;
+          gap: 5px;               /* or set margin between tables if you like */
+        }
+
+        /* each table is exactly half of 1024px */
+        .components-table {
+          width: 512px;
+          table-layout: fixed;  /* fixes column widths & enables wrapping */
+          border-collapse: collapse;
+        }
+
+        .components-table th:first-child,
+        .components-table td:first-child {
+            width: 40px;
+        }
+
+        /* cells & headers */
+        .components-table th,
+        .components-table td {
+          border: 1px solid #ccc;
+          padding: 8px;
+          white-space: normal;      /* allow wrapping */
+          word-wrap: break-word;    /* break long words if needed */
+          vertical-align: top;
+          text-align: left;
+        }
+
+        /* optional: style your headers */
+        .components-table th {
+          background: #f2f2f2;
+        }
+
     </style>
 </head>
 <body>
 
     <!-- Banner with logo and title -->
     <div id="banner">
-        <img src="resources/images/logo-connected.svg" alt="RubyCon_Fluo Logo" />
-        <h1>RubyCon_Fluo User Guide</h1>
+        <img src="resources/images/logo-connected-title.png" alt="RubyCon_Fluo Logo" width="400" />
+        <h1>User Guide</h1>
     </div>
 
     <!-- Short program description -->
     <section>
         <p>
-            RubyCon Flux allows you to collect and fit ruby‐fluorescence spectra from OceanOptics spectrometers. It supports manual peak selection, pseudo‐Voigt fitting, and an automated two‐peak Voigt model for R1 and R2 lines. Once fitted, you can convert wavelength position of the R1 peak to pressure at a given temperature using various literature calibrations, and save both raw spectra and fit metadata to text files.
+            RubyCon_Fluo allows you to collect and fit ruby‐fluorescence spectra from Ocean Optics spectrometers. It supports manual peak selection, pseudo‐Voigt fitting, and an automated two‐peak Voigt model for R1 and R2 lines. Once fitted, you can convert wavelength position of the R1 peak to pressure at a given temperature using various literature calibrations, and save both raw spectra and fit metadata to text files.
         </p>
     </section>
 
@@ -157,12 +193,12 @@
     <section id="introduction">
         <h1>1. Introduction</h1>
         <p>
-            This chapter introduces RubyCon Fluo, its purpose, and high‐level design.
+            RubyCon_Fluo is designed specifically for Ocean Optics spectrometers. It accesses the low-level python API to collect spectra directly from the spectrometer. It will check which settings are available on your model and allow you to turn on and off settings, including if it has a thermoelectric cooler.
         </p>
         <ul>
-            <li>Motivation for collecting ruby‐fluorescence spectra in high‐pressure experiments</li>
-            <li>Key features of the application</li>
-            <li>Overview of the workflow—from data acquisition to pressure calculation</li>
+            <li>Uses literature Ruby fluorescence shift calibrations to calculate pressure.</li>
+            <li>Allows for subtracting the background, collected with the laser off, from collected spectra.</li>
+            <li>Designed for high-speed collection and calibration to speed up experiments.</li>
         </ul>
         <!-- Placeholder for further discussion -->
     </section>
@@ -172,13 +208,27 @@
 
         <h2 id="requirements">2.1 System Requirements</h2>
         <p>
-            <!-- Placeholder: Minimum OS, RAM, Python version, etc. -->
+            RubyCon_Fluo is built for Python 3.13, but it may work with future versions of Python as well. Requirements are intentionally made to be low as it's a lightweight program.
         </p>
+        <ul>
+            <li>2 core CPU</li>
+            <li>4 GB of RAM</li>
+            <li>No GPU requirement</li>
+        </ul>
 
         <h2 id="dependencies">2.2 Dependencies</h2>
         <p>
-            <!-- Placeholder: List of required Python packages, e.g., PySide6, numpy, scipy, numba, pyqtgraph, seabreeze, etc. -->
+            Required Python packages:
         </p>
+        <ul>
+            <li>PySide6</li>
+            <li>PyQtGraph</li>
+            <li>seabreeze</li>
+            <li>numpy</li>
+            <li>numba</li>
+            <li>scipy</li>
+        </ul>
+
 
         <h2 id="setup">2.3 Setup & Configuration</h2>
         <p>
@@ -196,9 +246,9 @@
 
         <h2 id="basic-workflow">3.2 Basic Workflow</h2>
         <ol>
-            <li>Select your OceanOptics spectrometer from the Devices dropdown.</li>
+            <li>Select your Ocean Optics spectrometer from the Devices dropdown.</li>
             <li>Adjust integration time and number of scans, then click “Single” or “Continuous” to acquire spectra.</li>
-            <li>Use one of the fitting modes (Manual, Manual‐Voigt, Auto) to locate R1 (and R2) peaks.</li>
+            <li>Use one of the fitting modes (Manual, Manual‐Voigt, or Auto) to locate R1 peak with your mouse, or automatically in Auto mode.</li>
             <li>Press “Add Measurement” to save the current fit and raw spectrum to the table.</li>
             <li>Optionally enable Auto‐Save to write measurements to text files automatically.</li>
         </ol>
@@ -208,18 +258,116 @@
         <h1>4. User Interface Overview</h1>
 
         <h2 id="main-window">4.1 Main Window Components</h2>
-        <ul>
-            <li><strong>Menu Bar:</strong> Provides access to the User Guide and About dialogs.</li>
-            <li><strong>Device Panel:</strong> Dropdown to select spectrometer; buttons to refresh or set defaults.</li>
-            <li><strong>Spectrum Plot:</strong> Real‐time display of corrected spectra with overlays for fitting.</li>
-            <li><strong>Control Panel:</strong> Integration time, scan averaging, correction toggles, and fit options.</li>
-            <li><strong>Measurement Table:</strong> Lists saved measurements and supports exporting to text files.</li>
-        </ul>
 
-        <h2 id="controls">4.2 Control Panels and Buttons</h2>
         <p>
-            <!-- Placeholder: Explain each button/checkbox—e.g., “Optimize,” “Background,” “Manual Fit,” etc. -->
+            <img src="resources/images/main-overview-annotated.png" alt="RubyCon_Fluo Main Tab Annotated" width = "1024"/>
         </p>
+
+        <div class="components-container">
+         <!-- first half of the list -->
+          <table class="components-table">
+            <thead>
+              <tr><th>Key</th><th>Explanation</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>A</td><td>Settings tab.</td></tr>
+              <tr><td>B</td><td>Main tab.</td></tr>
+              <tr><td>C</td><td>Reset zoom to full range.</td></tr>
+              <tr><td>D</td><td>Switch to box zoom mode.</td></tr>
+              <tr><td>E</td><td>Scale intensity to current view once.</td></tr>
+              <tr><td>F</td><td>Automatically scale intensity continuously to current view.</td></tr>
+              <tr><td>G</td><td>Spectrum view.</td></tr>
+              <tr><td>H</td><td>Literature pressure calibrations selection. View source by clicking the question mark.</td></tr>
+              <tr><td>I</td><td>Literature temperature calibrations selection. View source by clicking the question mark.</td></tr>
+              <tr><td>J</td><td>Enable the reference wavelength and temperature number boxes to modify them.</td></tr>
+              <tr><td>K</td><td>Reference wavelength.</td></tr>
+              <tr><td>L</td><td>Reference temperature.</td></tr>
+            <tr><td>M</td><td>Currently fit R1 wavelength. Cannot edit manually.</td></tr>
+            <tr><td>N</td><td>Temperature of sample for current spectrum. Can edit manually.</td></tr>
+            <tr><td>O</td><td>Pressure from current wavelength (M) and temperature (N) calculated using currently selected pressure (H) and temperature (I) selection.</td></tr>
+            <tr><td>P</td><td>Set integration time for spectrum collection. Click on the unit displayed to switch units from ms to s.</td></tr>
+            <tr><td>Q</td><td>Set number of acquisitions, or scans, to average. Can only enter integers.</td></tr>
+            <tr><td>R</td><td>Begin continuous acquisition using current integration time & scan number.</td></tr>
+            <tr><td>S</td><td>Start a single acquisition using current integration time & scan number.</td></tr>
+            <tr><td>T</td><td>Begin an automated process to optimize the integration time.</td></tr>
+            <tr><td>U</td><td>Collect a background that will be subtracted from all collected spectra.</td></tr>
+            <tr><td>V</td><td>Write name to use for the current spectrum when adding it to the table (Z) below.</td></tr>
+            </tbody>
+            </table>
+        <table class="components-table">
+            <thead>
+              <tr><th>Key</th><th>Explanation</th></tr>
+            </thead>
+            <tbody>
+            <tr><td>W</td><td>Add the current spectrum to the table (Z) with the given name (V).</td></tr>
+            <tr><td>X</td><td>Remove the currently selected spectrum from the table (Z).</td></tr>
+            <tr><td>Y</td><td>Remove all spectra saved to the table.</td></tr>
+            <tr><td>Z</td><td>Table to show all added spectra.</td></tr>
+            <tr><td>α</td><td>Save the currently selected rows from the table to your computer.</td></tr>
+            <tr><td>β</td><td>Save all spectra in the table to your computer.</td></tr>
+            <tr><td>γ</td><td>Load a previously saved spectrum from your computer to the table.</td></tr>
+            <tr><td>δ</td><td>When checked, saves all spectra added to the table automatically to a folder on your computer.</td></tr>
+            <tr><td>ε</td><td>After a spectrum has been collected, this will allow you to manually fit it by placing a vertical line in the center of the R1 peak.</td></tr>
+            <tr><td>ζ</td><td>After a spectrum has been collected, this will allow you to manually fit it with a Voigt peak.</td></tr>
+            <tr><td>η</td><td>This will clear all fits, of any kind, from the current spectrum.</td></tr>
+            <tr><td>θ</td><td>Toggle on and off auto Voigt fitting mode.</td></tr>
+            <tr><td>ι</td><td>Set the low end of the auto-fitting range.</td></tr>
+            <tr><td>κ</td><td>Set the high end of the auto-fitting range.</td></tr>
+            <tr><td>λ</td><td>Set the fitting range using the current wavelength range in the plotting area (G).</td></tr>
+            <tr><td>μ</td><td>Zoom the wavelength range in G to the currently set wavelength fitting range in ι and κ.</td></tr>
+            <tr><td>ν</td><td>Progress bar of current acquisition.</td></tr>
+            <tr><td>ξ</td><td>Progress bar of current number of acquisition scans.</td></tr>
+            <tr><td>ο</td><td>Remaining time for current acquisition. Integration time × scan number.</td></tr>
+            <tr><td>π</td><td>x,y position of mouse cursor in G.</td></tr>
+            <tr><td>ρ</td><td>Calculated pressure of mouse cursor using π and currently selected pressure (H) and temperature (I) calibration.</td></tr>
+
+            </tbody>
+        </table>
+        </div>
+
+
+    <h2 id="controls">4.2 Settings Window Components</h2>
+    <p>
+        <img src="resources/images/settings-overview-annotated.png" alt="RubyCon_Fluo Settings Tab Annotated" width = "1024"/>
+    </p>
+
+        <div class="components-container">
+         <!-- first half of the list -->
+          <table class="components-table">
+            <thead>
+              <tr><th>Key</th><th>Explanation</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>A</td><td>Settings tab.</td></tr>
+              <tr><td>B</td><td>Main tab.</td></tr>
+              <tr><td>C</td><td>Electric-dark correction toggle.</td></tr>
+              <tr><td>D</td><td>Optical-dark correction toggle.</td></tr>
+              <tr><td>E</td><td>Stray-light correction toggle.</td></tr>
+              <tr><td>F</td><td>Non-linearity correction toggle.</td></tr>
+              <tr><td>G</td><td>Irradiance calibration toggle.</td></tr>
+              <tr><td>H</td><td>Toggle pixel binning and set number of pixels to bin using dropdown.</td></tr>
+              <tr><td>I</td><td>Toggle boxcar smoothing and set number of pixels to use for the smoothing.</td></tr>
+              <tr><td>J</td><td>Toggle the thermoelectric cooler on or off. Only works if your spectrometer is equipped with a TEC and power is supplied to the TEC.</td></tr>
+            </tbody>
+            </table>
+        <table class="components-table">
+            <thead>
+              <tr><th>Key</th><th>Explanation</th></tr>
+            </thead>
+            <tbody>
+            <tr><td>K</td><td>Current temperature of the detector.</td></tr>
+            <tr><td>L</td><td>Set the desired temperature for the detector.</td></tr>
+            <tr><td>M</td><td>Toggle the detector temperature plot.</td></tr>
+            <tr><td>N</td><td>The detector temperature plot will be shown here if enabled by M</td></tr>
+            <tr><td>O</td><td>Select which spectrometer to use if multiple are connected.</td></tr>
+            <tr><td>P</td><td>Re-scan your computer if a new spectrometer was connected to populate O.</td></tr>
+            <tr><td>Q</td><td>Apply the currently selected settings to the currently selected spectrometer as defaults.</td></tr>
+            <tr><td>R</td><td>Automatically polls the spectrometer for all information about itself that it has and displays it here.</td></tr>
+            <tr><td>S</td><td>When toggled, it polls and displays below current data stored in the EEPROM of the spectrometer.</td></tr>
+            </tbody>
+        </table>
+        </div>
+
     </section>
 
     <section id="data-acquisition">
@@ -227,7 +375,8 @@
 
         <h2 id="spectrometer-selection">5.1 Spectrometer Selection</h2>
         <p>
-            <!-- Placeholder: How to detect connected devices, and pick the correct one. -->
+            When RubyCon_Fluo first opens, it selects the first spectrometer by default in the Settings tab as long as it's connected to the computer and discoverable. Make sure to close any other software first that accesses the spectrometer. If you have multiple spectrometers, you can select a different one in the dropdown menu.
+            The settings tab should correctly poll the spectrometer, check which features are present in your model, and gray out any features not present so you can't select it. Once you toggle which corrections & calibrations you want for the chosen spectrometer, click on "Apply settings as default for this device" and it will add the chosen toggle states to <code>spectrometer_defaults.json</code> and remember them, setting the same ones automatically next time you open the program or select that spectrometer.
         </p>
 
         <h2 id="integration-settings">5.2 Integration Time & Averaging</h2>
