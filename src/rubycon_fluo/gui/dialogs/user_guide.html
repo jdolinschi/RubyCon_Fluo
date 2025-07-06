@@ -105,25 +105,69 @@
           background: #f2f2f2;
         }
 
+        /* Layout for wrapper */
+        #wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar styles */
+        #sidebar {
+          position: sticky;    /* or: fixed; */
+          top: 0;
+          align-self: flex-start;  /* only needed with position:sticky in a flex container */
+          height: 100vh;       /* full viewport height */
+          width: 250px;        /* whatever your normal width is */
+          overflow-y: auto;    /* get a scrollbar if its contents overflow */
+          overflow-x: hidden;  /* hide any horizontal overflow */
+          background-color: #ecf0f1;
+          transition: width 0.3s ease;
+          z-index: 10;         /* keep it above your content */
+        }
+
+        #sidebar.collapsed {
+          width: 30px;
+        }
+
+        #sidebar.collapsed #toc {
+            display: none;
+        }
+
+        /* Toggle button */
+        #toggle-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #bdc3c7;
+            color: #2c3e50;
+            border: 1px solid #aaa;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 18px;
+            cursor: pointer;
+            z-index: 11;
+        }
+
+        #main-content {
+          margin-left: 250px;       /* must match your sidebar width */
+          transition: margin-left 0.3s ease;
+        }
+
+        #sidebar.collapsed + #main-content {
+          margin-left: 30px;
+        }
+
+
     </style>
 </head>
+
 <body>
-
-    <!-- Banner with logo and title -->
-    <div id="banner">
-        <img src="resources/images/logo-connected-title.png" alt="RubyCon_Fluo Logo" width="400" />
-        <h1>User Guide</h1>
-    </div>
-
-    <!-- Short program description -->
-    <section>
-        <p>
-            RubyCon_Fluo allows you to collect and fit ruby‐fluorescence spectra from Ocean Optics spectrometers. It supports manual peak selection, pseudo‐Voigt fitting, and an automated two‐peak Voigt model for R1 and R2 lines. Once fitted, you can convert wavelength position of the R1 peak to pressure at a given temperature using various literature calibrations, and save both raw spectra and fit metadata to text files.
-        </p>
-    </section>
-
-    <!-- Table of Contents with anchor links -->
-    <nav id="toc">
+  <div id="wrapper">
+    <aside id="sidebar">
+      <div id="toggle-btn">&#x25C0;</div> <!-- Left-pointing arrow -->
+      <nav id="toc">
         <h2>Contents</h2>
         <ul>
             <li><a href="#introduction">1. Introduction</a></li>
@@ -187,8 +231,22 @@
             </li>
         </ul>
     </nav>
+    </aside>
+    <main id="main-content">
 
-    <!-- Sections with placeholder content -->
+    <!-- Banner with logo and title -->
+    <div id="banner">
+        <img src="resources/images/logo-connected-title.png" alt="RubyCon_Fluo Logo" width=400 />
+        <h1>User Guide</h1>
+    </div>
+
+    <!-- Short program description -->
+    <section>
+        <p>
+            RubyCon_Fluo allows you to collect and fit ruby‐fluorescence spectra from Ocean Optics spectrometers. It supports manual peak selection, pseudo‐Voigt fitting, and an automated two‐peak Voigt model for R1 and R2 lines. Once fitted, you can convert wavelength position of the R1 peak to pressure at a given temperature using various literature calibrations, and save both raw spectra and fit metadata to text files.
+        </p>
+    </section>
+
     <hr>
     <section id="introduction">
         <h1>1. Introduction</h1>
@@ -476,5 +534,18 @@
     <footer>
         &copy; 2025 RubyCon_Fluo Project. All rights reserved.
     </footer>
+</main>
+  </div>
+  <footer>…</footer>
+
+  <script>
+    const toggleBtn = document.getElementById("toggle-btn");
+    const sidebar = document.getElementById("sidebar");
+
+    toggleBtn.addEventListener("click", () => {
+      sidebar.classList.toggle("collapsed");
+      toggleBtn.innerHTML = sidebar.classList.contains("collapsed") ? "&#x25B6;" : "&#x25C0;";
+    });
+  </script>
 </body>
 </html>
