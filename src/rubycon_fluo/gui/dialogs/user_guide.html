@@ -2,9 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>RubyCon_Fluo User Guide</title>
     <style>
-        /* Simple styling for banner and navigation */
+        html, body {
+            /* stop the window getting so narrow that tables/images become unreadable */
+            min-width: 820px;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
         body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
@@ -17,11 +25,9 @@
             padding: 20px;
             display: flex;
             align-items: center;
+            gap: 20px;
         }
-        #banner img {
-            height: 400px;
-            margin-right: 100px
-        }
+
         #banner h1 {
             margin: 0;
             font-size: 1.8em;
@@ -115,18 +121,22 @@
         #sidebar {
           position: sticky;    /* or: fixed; */
           top: 0;
-          align-self: flex-start;  /* only needed with position:sticky in a flex container */
           height: 100vh;       /* full viewport height */
           width: 250px;        /* whatever your normal width is */
           overflow-y: auto;    /* get a scrollbar if its contents overflow */
           overflow-x: hidden;  /* hide any horizontal overflow */
           background-color: #ecf0f1;
           transition: width 0.3s ease;
+          flex: 0 0 250px;               /* grow 0, shrink 0, basis 250 px  */
+          min-width: 250px;
           z-index: 10;         /* keep it above your content */
         }
 
         #sidebar.collapsed {
           width: 30px;
+            /* NEW –- same idea, different number */
+        flex: 0 0 15px;
+        min-width: 15px;
         }
 
         #sidebar.collapsed #toc {
@@ -137,27 +147,48 @@
         #toggle-btn {
             position: absolute;
             top: 10px;
-            right: 10px;
-            background-color: #bdc3c7;
-            color: #2c3e50;
-            border: 1px solid #aaa;
+            right: 0px;         /* overhang so always visible */
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            text-align: center;
-            line-height: 18px;
+            border: 1px solid #aaa;
+            background: #ffffffee;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            z-index: 11;
+            transition: background 0.3s ease;
+        }
+
+        #toggle-btn:hover {
+            background: #e0e0e0;
+        }
+
+        /* SVG icon inside button */
+        #toggle-icon {
+            width: 16px;
+            height: 16px;
+            fill: #2c3e50;
+            transition: transform 0.3s ease;
+        }
+
+        #sidebar.collapsed #toggle-icon {
+            transform: rotate(180deg);
         }
 
         #main-content {
-          margin-left: 250px;       /* must match your sidebar width */
-          transition: margin-left 0.3s ease;
+            flex: 1 1 auto;                     /* fill the rest of the width */
+            margin-left: 5px;                 /* keep clear of normal sidebar */
+            transition: margin-left .3s ease;
+            overflow-x: hidden;                 /* kill any accidental horizontal scroll */
         }
 
         #sidebar.collapsed + #main-content {
           margin-left: 30px;
         }
+
+        section img, #banner img { max-width: 100%; height: auto; }
 
 
     </style>
@@ -166,7 +197,11 @@
 <body>
   <div id="wrapper">
     <aside id="sidebar">
-      <div id="toggle-btn">&#x25C0;</div> <!-- Left-pointing arrow -->
+      <button id="toggle-btn" aria-label="Toggle sidebar">
+        <svg id="toggle-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 5l8 7-8 7" />
+        </svg>
+      </button>
       <nav id="toc">
         <h2>Contents</h2>
         <ul>
@@ -544,7 +579,6 @@
 
     toggleBtn.addEventListener("click", () => {
       sidebar.classList.toggle("collapsed");
-      toggleBtn.innerHTML = sidebar.classList.contains("collapsed") ? "&#x25B6;" : "&#x25C0;";
     });
   </script>
 </body>

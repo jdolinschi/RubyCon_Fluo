@@ -11,6 +11,8 @@ class AboutWindow(QMainWindow):
         super().__init__(parent, flags=Qt.Window)
         self.setWindowTitle("User Guide")
 
+        # NEW – stop the user from squashing the HTML below the 820-px CSS limit
+        self.setMinimumSize(820, 600)
 
         webview = QWebEngineView(self)
         self.setCentralWidget(webview)
