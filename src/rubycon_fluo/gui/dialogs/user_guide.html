@@ -230,25 +230,34 @@
                     <li><a href="#spectrometer-selection">5.1 Spectrometer Selection</a></li>
                     <li><a href="#integration-settings">5.2 Integration Time & Averaging</a></li>
                     <li><a href="#background-collection">5.3 Background Collection</a></li>
+                    <li><a href="#acquisition">5.4 Acquisition</a></li>
                 </ul>
             </li>
-            <li><a href="#fitting-modes">6. Fitting Modes</a>
+            <li><a href="#plot-interactions">6. Plot interactions</a>
                 <ul class="subsection">
-                    <li><a href="#manual-mode">6.1 Manual Peak Selection</a></li>
-                    <li><a href="#manual-voigt-mode">6.2 Manual Voigt Mode</a></li>
-                    <li><a href="#auto-fit-mode">6.3 Automatic Two‐Peak Voigt Fit</a></li>
+                    <li><a href="#plot-panning">6.1 Panning</a></li>
+                    <li><a href="#plot-zooming">6.2 Zooming</a></li>
+                    <li><a href="#plot-scaling">6.3 Scaling</a></li>
+                </ul>
+
+            </li>
+            <li><a href="#fitting-modes">7. Fitting Modes</a>
+                <ul class="subsection">
+                    <li><a href="#manual-mode">7.1 Manual Peak Selection</a></li>
+                    <li><a href="#manual-voigt-mode">7.2 Manual Voigt Mode</a></li>
+                    <li><a href="#auto-fit-mode">7.3 Automatic Two‐Peak Voigt Fit</a></li>
                 </ul>
             </li>
-            <li><a href="#pressure-calibration">7. Pressure & Temperature Calibration</a>
+            <li><a href="#pressure-calibration">8. Pressure & Temperature Calibration</a>
                 <ul class="subsection">
-                    <li><a href="#selecting-calibrations">7.1 Selecting Calibration Sources</a></li>
-                    <li><a href="#combined-vs-separate">7.2 Combined vs. Separate Calibrations</a></li>
+                    <li><a href="#selecting-calibrations">8.1 Selecting Calibration Sources</a></li>
+                    <li><a href="#combined-vs-separate">8.2 Combined vs. Separate Calibrations</a></li>
                 </ul>
             </li>
-            <li><a href="#saving-exporting">8. Saving & Exporting Data</a>
+            <li><a href="#saving-exporting">9. Saving & Exporting Data</a>
                 <ul class="subsection">
-                    <li><a href="#saving-measurements">8.1 Saving Measurements</a></li>
-                    <li><a href="#auto-save">8.2 Auto‐Save Feature</a></li>
+                    <li><a href="#saving-measurements">9.1 Saving Measurements</a></li>
+                    <li><a href="#auto-save">9.2 Auto‐Save Feature</a></li>
                 </ul>
             </li>
             <li><a href="#settings-preferences">9. Settings & Preferences</a>
@@ -474,12 +483,53 @@
 
         <h2 id="integration-settings">5.2 Integration Time & Averaging</h2>
         <p>
-            <!-- Placeholder: Explain integration time units (ms vs s toggle) and scan averaging. -->
+            Integration time and how many integrations to average can be set in the "Main" tab. Integration time can be in either units of milliseconds (ms) or seconds (s) by clicking the label "Integration time", labeled P in section 4.1.
+            Scans to average can be set in "Scans to average:", labeled Q in section 4.1. This accepts only integers. Total time spent collection is then Integration * Scans. Progress for both are shown in the progress bar on the
+            lower left area, labeled "V" and "ε" in section 4.1.
+            <br />
+            If the maximum possible integration time is desired without saturating the camera for a high quality spectrum, the "Optimize" button, labeled T in 4.1, can be used.
+            When clicked, a new window will open, and it will automatically take exposures. It will take exposures in a geometric series and measure the highest count. Once this count stops increasing in two subsequent exposures (i.e., the detector is saturated) in the series, it'll fit a straight line
+            to exposure vs. count, and automatically set the exposure time to 95% of the saturation limit for your spectrometer. Once this finishes, it's recommended you take another background at this new exposure time, detailed below.
+
         </p>
 
         <h2 id="background-collection">5.3 Background Collection</h2>
         <p>
-            <!-- Placeholder: Describe how to collect and apply a background spectrum before taking measurements. -->
+            It is always recommended that a background is collected with the excitation laser off but in all other respects the same environment as during collection. The "Background" button is used for this purpose, labeled "U" in 4.1.
+             When clicked, this will take an exposure with the integration time and averaging entered in P and Q. Once finished, the button will be grayed out and a check added to the button to notify the user that a background is being applied.
+            This background will be subtracted automatically from every exposure taken. To remove the background, click on the button again.
+        </p>
+
+        <h2 id="acquisition">5.4 Acquisition</h2>
+        <p>
+            To acquire a spectrum and see it plotted, either "Continuous" (R) or "Single" (S) can be used. Continuous will acquire with the entered acquisition time and for the number of scans entered in P and Q. It will finish the spectrum and start another,
+            plotting them in real time as they come in. "Single" will take a single spectrum and stop.
+        </p>
+    </section>
+
+    <section id="plot-interactions">
+        <h1>6. Plot interactions</h1>
+
+        <h2 id="plot-panning">6.1 Panning</h2>
+        <p>
+            Hold down left mouse click and drag across the plot.
+        </p>
+
+        <h2 id="plot-zooming">6.1 Panning</h2>
+        <p>
+            Zooming can be done multiple ways:
+             <ul>
+                <li>Mouse wheel: zooms `x` and `y` equally in and out.</li>
+                <li>Middle mouse hold and drag: draws a red rectangle from start to end position of drag and zooms into that rectangle.</li>
+                <li>Right click hold and drag: zooms around the mouse cursor position. `x` is zoomed proportional to horizontal mouse drag, and `y` proportional to vertical mouse drag.</li>
+                <li>Hold `Alt` + left click drag: zooms from start to end of drag along either only `x` or `y`, marked with a shaded blue region, depending on which direction, horizontal or vertical, the cursor was dragged further.</li>
+            </ul>
+        </p>
+
+        <h2 id="plot-scaling">6.1 Panning</h2>
+        <p>
+            To scale the `y` axis, or intensity, so it fits the current view, you can either click "Scale Intensity" (E) for a single auto-scaling, or check "Auto scale intensity" checkbox (F) so it automatically scales intensity for
+            every new spectrum or change of view on the plot. Uncheck to disable this mode.
         </p>
     </section>
 
@@ -488,7 +538,8 @@
 
         <h2 id="manual-mode">6.1 Manual Peak Selection</h2>
         <p>
-            <!-- Placeholder: Describe how LEFT‐click locks a single‐point fit and updates pressure. RIGHT‐click clears it. -->
+            In manual fitting mode, a vertical line follows the cursor position on the plot. When the vertical line is where the R1 ruby fluorescence peak position is, left click to 'lock it' in.
+            This position will be used to calculate the pressure. To use this, click on "Manual fit" (ε). When in this mode, the button is greyed out. 
         </p>
 
         <h2 id="manual-voigt-mode">6.2 Manual Voigt Mode</h2>
